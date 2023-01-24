@@ -7,7 +7,10 @@ group = "dev.emortal.minestom"
 version = "1.0-SNAPSHOT"
 
 dependencies {
-    implementation("com.github.Minestom", "Minestom", "eb06ba8664")
+    implementation("dev.emortal.minestom", "core", "b875988")
+    implementation("dev.emortal.minestom", "game-sdk", "fba7a26")
+
+    implementation("com.github.Minestom", "Minestom", "c995f9c3a9")
 }
 
 tasks {
