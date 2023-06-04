@@ -28,12 +28,12 @@ public class DamageHandler {
         this.game = game;
     }
 
-    public void registerListener(EventNode<InstanceEvent> eventNode) {
+    public void registerListeners(EventNode<InstanceEvent> eventNode) {
 
     }
 
 
-    public static void damage(Player damager, Player target, float damage) {
+    public static void damage(Player target, Player damager, float damage) {
         if (target.getGameMode() != GameMode.ADVENTURE) return;
 
         setSpawnProtection(damager, 0L);

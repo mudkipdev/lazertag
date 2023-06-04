@@ -52,6 +52,10 @@ public final class LazerTagGame extends Game {
         });
     }
 
+    public Instance getInstance() {
+        return instance;
+    }
+
     @Override
     public void onPlayerLogin(@NotNull PlayerLoginEvent playerLoginEvent) {
 
