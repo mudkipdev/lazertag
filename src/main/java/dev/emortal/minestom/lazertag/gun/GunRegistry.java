@@ -1,5 +1,7 @@
 package dev.emortal.minestom.lazertag.gun;
 
+import dev.emortal.minestom.lazertag.game.LazerTagGame;
+import dev.emortal.minestom.lazertag.gun.guns.Shotgun;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,14 +12,21 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class GunRegistry {
     private final Map<String, Gun> registry = new HashMap<>();
+    private final Gun[] guns;
+    private final LazerTagGame game;
+
+    public GunRegistry(LazerTagGame game) {
+        this.game = game;
+
+        registerGuns();
+        guns = registry.values().toArray(new Gun[0]);
+    }
 
     public @Nullable Gun getByName(final @NotNull String name) {
         return registry.get(name);
     }
 
     public @NotNull Gun getRandomGun() {
-        Gun[] guns = registry.values().toArray(new Gun[0]);
-
         int totalWeight = 0;
         for (Gun value : guns) {
             totalWeight += value.getItemInfo().rarity().getWeight();
@@ -44,5 +53,10 @@ public class GunRegistry {
 
     public @NotNull Collection<String> getPowerUpNames() {
         return registry.keySet();
+    }
+
+    public void registerGuns() {
+//        register(new LazerMinigun(game));
+        register(new Shotgun(game));
     }
 }

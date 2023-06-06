@@ -11,6 +11,7 @@ import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class RaycastUtil {
         return null;
     }
 
-    public static RaycastResult raycastEntity(Instance instance, Point startPoint, Point direction, double maxDistance, Predicate<Entity> hitFilter) {
+    public static @NotNull RaycastResult raycastEntity(Instance instance, Point startPoint, Point direction, double maxDistance, Predicate<Entity> hitFilter) {
         for (Entity entity : instance.getEntities()) {
             if (!hitFilter.test(entity)) continue;
             if (entity.getPosition().distanceSquared(startPoint) > maxDistance * maxDistance) continue;
@@ -94,12 +95,12 @@ public class RaycastUtil {
         Point blockRaycast = raycastBlock(instance, startPoint, direction, maxDistance);
         RaycastResult entityRaycast = raycastEntity(instance, startPoint, direction, maxDistance, hitFilter);
 
-        if (entityRaycast == null && blockRaycast == null) {
+        if (entityRaycast == RaycastResult.HIT_NOTHING && blockRaycast == null) {
             return new RaycastResult(null, null);
         }
 
         // block raycast is always true when reached
-        if (entityRaycast == null) {
+        if (entityRaycast == RaycastResult.HIT_NOTHING) {
             return new RaycastResult(null, blockRaycast);
         }
 
@@ -110,7 +111,6 @@ public class RaycastUtil {
 
         // Both entity and block check have collided, time to see which is closer!
 
-        assert entityRaycast.hitPosition() != null;
         double distanceToEntity = startPoint.distanceSquared(entityRaycast.hitPosition());
         double distanceToBlock = startPoint.distanceSquared(blockRaycast);
 

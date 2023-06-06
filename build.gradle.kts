@@ -11,9 +11,10 @@ dependencies {
     implementation("dev.emortal.minestom", "game-sdk", "6502476")
 
     implementation("net.kyori:adventure-text-minimessage:4.12.0")
-    implementation("com.github.EmortalMC:TNT:4ef1b53482")
+//    implementation("dev.hollowcube:polar:1.1.1")
 
     implementation("dev.emortal", "rayfast", "d198fa1")
+    implementation("dev.emortal.tnt", "TNT", "75546f5")
 }
 
 java {

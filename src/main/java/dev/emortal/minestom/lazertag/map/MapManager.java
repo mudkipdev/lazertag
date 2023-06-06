@@ -28,7 +28,7 @@ public class MapManager {
             .build();
 
     private static final List<String> ENABLED_MAPS = List.of(
-            "lazertag"
+            "dizzymc"
     );
     private static final Path MAPS_PATH = Path.of("maps");
 
@@ -41,8 +41,18 @@ public class MapManager {
 
         for (String mapName : ENABLED_MAPS) {
             final Path tntPath = MAPS_PATH.resolve(mapName + ".tnt");
+            final Path anvilPath = MAPS_PATH.resolve(mapName + "/");
 
             try {
+//                PolarWorld world;
+//                if (!Files.exists(polarPath)) { // File needs to be converted
+//                    world = AnvilPolar.anvilToPolar(anvilPath, ChunkSelector.radius(5));
+//                    PolarWriter.write(world);
+//                } else {
+//                    world = PolarReader.read(Files.readAllBytes(polarPath));
+//                }
+//
+//                final PolarLoader chunkLoader = new PolarLoader(world);
                 final TNTLoader chunkLoader = new TNTLoader(new FileTNTSource(tntPath));
 
                 chunkLoaders.put(mapName, chunkLoader);
@@ -74,5 +84,10 @@ public class MapManager {
 
         return MinecraftServer.getInstanceManager()
                 .createInstanceContainer(DIMENSION_TYPE, chunkLoader);
+    }
+
+    public String getNameWithoutExtension(String path) {
+        int dotIndex = path.lastIndexOf('.');
+        return (dotIndex == -1) ? path : path.substring(0, dotIndex);
     }
 }

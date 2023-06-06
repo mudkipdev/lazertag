@@ -17,13 +17,18 @@ public class LazerMinigun extends Gun {
                 new GunItemInfo(
                         Material.NETHERITE_SHOVEL,
                         ItemRarity.RARE,
+
                         0.75f,
                         50.0,
                         3,
                         70,
+
                         3500,
                         100,
                         50,
+                        0,
+                        1,
+
                         Sound.sound(SoundEvent.BLOCK_BEACON_DEACTIVATE, Sound.Source.PLAYER, 2f, 2f)
                 )
         );
