@@ -13,8 +13,11 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.fakeplayer.FakePlayer;
+import net.minestom.server.entity.fakeplayer.FakePlayerOption;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
@@ -27,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.UUID;
 
 public final class LazerTagGame extends Game {
 
@@ -42,6 +46,7 @@ public final class LazerTagGame extends Game {
     private final GameCreationInfo creationInfo;
     private final GunManager gunManager;
     private final DamageHandler damageHandler;
+    private final TagHandler tagHandler;
     public LazerTagGame(final @NotNull GameCreationInfo creationInfo, @NotNull EventNode<Event> gameEventNode, @NotNull Instance instance) {
         super(creationInfo, gameEventNode);
 
@@ -61,6 +66,7 @@ public final class LazerTagGame extends Game {
 
         this.gunManager = new GunManager(this);
         this.damageHandler = new DamageHandler(this);
+        this.tagHandler = new TagHandler();
     }
 
     public Instance getInstance() {
@@ -73,9 +79,12 @@ public final class LazerTagGame extends Game {
     public DamageHandler getDamageHandler() {
         return damageHandler;
     }
-
     public GunManager getGunManager() {
         return gunManager;
+    }
+
+    public TagHandler getTagHandler() {
+        return tagHandler;
     }
 
     @Override
@@ -102,8 +111,18 @@ public final class LazerTagGame extends Game {
     @Override
     public void start() {
         for (Player player : players) {
+            tagHandler.initializePlayerTags(player);
             player.setHeldItemSlot((byte) 4);
             damageHandler.respawn(player);
+        }
+
+        if (GameSdkModule.TEST_MODE) {
+            FakePlayer.initPlayer(UUID.randomUUID(), "lazertagbot", new FakePlayerOption().setInTabList(true), fp -> {
+                fp.setHeldItemSlot((byte) 4);
+                fp.setVelocity(new Vec(2, 20, 0));
+                damageHandler.respawn(fp);
+                fp.setCustomSynchronizationCooldown(Duration.ofSeconds(3));
+            });
         }
 
         var eventNode = instance.eventNode();
@@ -167,6 +186,7 @@ public final class LazerTagGame extends Game {
         for (final Player player : players) {
             player.setTeam(null);
             player.clearEffects();
+            tagHandler.removePlayerTags(player);
         }
         KurushimiMinestomUtils.sendToLobby(players, this::removeGame, this::removeGame);
     }

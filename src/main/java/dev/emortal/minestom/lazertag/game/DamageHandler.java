@@ -5,6 +5,7 @@ import dev.emortal.minestom.lazertag.util.entity.BetterEntity;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.coordinate.Pos;
@@ -13,6 +14,8 @@ import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.damage.DamageType;
+import net.minestom.server.entity.damage.EntityDamage;
+import net.minestom.server.entity.fakeplayer.FakePlayer;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.EventNode;
@@ -22,6 +25,7 @@ import net.minestom.server.network.packet.server.play.HitAnimationPacket;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.tag.Tag;
 import net.minestom.server.timer.TaskSchedule;
+import net.minestom.server.utils.MathUtils;
 import net.minestom.server.utils.position.PositionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +46,13 @@ public class DamageHandler {
             Component.empty(),
             DEFAULT_TIMES
     );
-    public static final Tag<Integer> KILLS_TAG = Tag.Integer("kills");
     public static final Tag<Long> SPAWN_PROT_TAG = Tag.Long("spawnProt");
+
+    private static final long COMBO_MILLIS_DEFAULT = 4000;
+    public static final Tag<Long> COMBO_MILLIS_TAG = Tag.Long("comboMillis");
+    public static final Tag<Integer> COMBO_TAG = Tag.Integer("combo");
+    public static final Tag<Integer> KILLS_TAG = Tag.Integer("kills");
+    public static final Tag<Integer> DEATHS_TAG = Tag.Integer("deaths");
 
     private static final DecimalFormat HEALTH_FORMAT = new DecimalFormat("0.##");
 
@@ -67,8 +76,6 @@ public class DamageHandler {
         setSpawnProtection(damager, 0L);
         if (hasSpawnProtection(target)) return;
 
-        System.out.println("Health: " + target.getHealth());
-        System.out.println("Damage: " + damage);
         if (getWouldDie(target, damage)) {
             kill(target);
             return;
@@ -91,11 +98,26 @@ public class DamageHandler {
         entity.setGravityDrag(false);
 
         float healthPercentage = damage / 20f;
+        TextColor color = TextColor.lerp(healthPercentage, NamedTextColor.DARK_RED, NamedTextColor.GOLD);
+        TextColor lighterColor = TextColor.color(
+                MathUtils.clamp(color.red() + 100, 0, 255),
+                MathUtils.clamp(color.green() + 100, 0, 255),
+                MathUtils.clamp(color.blue() + 100, 0, 255)
+        );
 
         TextDisplayMeta meta = (TextDisplayMeta) entity.getEntityMeta();
-        meta.setText(Component.text("❤ " + HEALTH_FORMAT.format(damage), NamedTextColor.RED));
+
+        meta.setNotifyAboutChanges(false);
         meta.setBillboardRenderConstraints(AbstractDisplayMeta.BillboardConstraints.CENTER);
         meta.setScale(new Vec(2, 2, 0).mul(healthPercentage).add(1, 1, 1));
+        meta.setShadow(true);
+        meta.setText(
+                Component.text()
+                    .append(Component.text("❤ ", color))
+                    .append(Component.text(HEALTH_FORMAT.format(damage), lighterColor))
+                    .build()
+        );
+        meta.setNotifyAboutChanges(true);
 
         var rand = ThreadLocalRandom.current();
 
@@ -119,7 +141,35 @@ public class DamageHandler {
     public void kill(Player player) {
         if (player.getGameMode() != GameMode.ADVENTURE) return; // Already dead
 
-        // TODO: calculate killer
+        if (
+                player.getLastDamageSource() instanceof EntityDamage entityDamage
+                && entityDamage.getSource() instanceof Player killer
+        ) {
+            game.getInstance().sendMessage(getDeathMessage(player, killer));
+
+            killer.showTitle(Title.title(
+                    Component.empty(),
+                    Component.text("☠" + player.getUsername(), NamedTextColor.RED),
+                    Title.Times.times(Duration.ZERO, Duration.ofMillis(500), Duration.ofMillis(700))
+            ));
+
+            int combo = getCombo(killer);
+            killer.playSound(Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 2f, 1f + (combo * 0.1f)), Sound.Emitter.self());
+            incrementCombo(killer);
+        } else {
+            game.getInstance().sendMessage(getDeathMessage(player));
+        }
+
+        if (player instanceof FakePlayer) { // For testing!
+            player.setGameMode(GameMode.SPECTATOR);
+            player.scheduler().buildTask(() -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            }).delay(TaskSchedule.tick(5)).schedule();
+            player.heal();
+            return;
+        }
+
+        // TODO: calculate killer and show them kill notification
 
         player.setAutoViewable(false);
         player.setGameMode(GameMode.SPECTATOR);
@@ -206,12 +256,45 @@ public class DamageHandler {
         }
         player.setTag(SPAWN_PROT_TAG, System.currentTimeMillis() + millis);
     }
-
-    public static boolean hasSpawnProtection(Player player) {
+    public boolean hasSpawnProtection(Player player) {
         Long spawnProtMillis = player.getTag(SPAWN_PROT_TAG);
         if (spawnProtMillis == null) return false;
 
         return System.currentTimeMillis() > spawnProtMillis;
+    }
+
+    private int getCombo(Player player) {
+        long comboMillis = player.getTag(COMBO_MILLIS_TAG);
+        if (comboMillis < System.currentTimeMillis()) { // Time has passed for combo
+            player.setTag(COMBO_TAG, 0);
+            return 0;
+        }
+        return player.getTag(COMBO_TAG);
+    }
+    private void incrementCombo(Player player) {
+        int currentCombo = player.getTag(COMBO_TAG);
+        player.setTag(COMBO_TAG, currentCombo + 1);
+        player.setTag(COMBO_MILLIS_TAG, System.currentTimeMillis() + COMBO_MILLIS_DEFAULT);
+    }
+
+    public Component getDeathMessage(Player player) {
+        return Component.text()
+                .append(Component.text("☠", NamedTextColor.RED))
+                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                .append(Component.text(player.getUsername(), NamedTextColor.RED))
+                .append(Component.text(" died", NamedTextColor.GRAY))
+                .build();
+    }
+    public Component getDeathMessage(Player player, Player killer) {
+        return Component.text()
+                .append(Component.text("☠", NamedTextColor.RED))
+                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                .append(Component.text(killer.getUsername(), NamedTextColor.WHITE))
+                .append(Component.text(" killed ", NamedTextColor.GRAY))
+                .append(Component.text(player.getUsername(), NamedTextColor.RED))
+//                .append(Component.text(" with ", NamedTextColor.GRAY))
+//                .append(Component.text(gunName, NamedTextColor.GOLD))
+                .build();
     }
 
 }

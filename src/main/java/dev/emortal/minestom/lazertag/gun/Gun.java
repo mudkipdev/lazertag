@@ -67,13 +67,13 @@ public abstract class Gun {
             });
             Point hitPoint = raycast.hitPosition() == null ? eyePos.add(shootDir.mul(this.itemInfo.distance())) : raycast.hitPosition();
 
-            ParticleUtil.renderBulletTrail(this.game.getInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
-
             if (raycast.hitEntity() != null) { // Hit entity
                 this.game.getDamageHandler().damage((Player) raycast.hitEntity(), shooter, shooter.getPosition(), this.itemInfo.damage());
             } else { // Hit block
                 // TODO: hit block animation
             }
+
+            ParticleUtil.renderBulletTrail(this.game.getInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
         }
 
 
@@ -162,7 +162,7 @@ public abstract class Gun {
         int ammo = (int) (this.itemInfo.ammo() * percentage);
 
         component.append(Component.space());
-        component.append(Component.text(String.format("%0" + String.valueOf(this.itemInfo.ammo()).length() + "d", ammo), NamedTextColor.DARK_GRAY));
+        component.append(Component.text(String.format("%0" + String.valueOf(this.itemInfo.ammo()).length() + "d", ammo), NamedTextColor.WHITE));
 
         player.sendActionBar(component.build());
     }
