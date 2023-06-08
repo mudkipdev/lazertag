@@ -30,13 +30,16 @@ public class BetterEntity extends Entity {
             synchronized (chunk) {
                 drag = chunk.getBlock(positionBeforeMove.sub(0, 0.5000001, 0)).registry().friction() * airDrag;
             }
-        } else drag = airDrag;
+        } else {
+            drag = airDrag;
+        }
 
         double gravity = flying ? 0 : gravityAcceleration;
         double gravityDrag;
 
-        if (!hasGravityDrag) gravityDrag = 1.0;
-        else {
+        if (!hasGravityDrag) {
+            gravityDrag = 1.0;
+        } else {
             gravityDrag = flying ? 0.6 : (1 - gravityDragPerTick);
         }
         if (!hasDrag) drag = 1.0;
@@ -59,10 +62,11 @@ public class BetterEntity extends Entity {
     public void tick(long time) {
         if (this.ticking) super.tick(time);
     }
-    
+
     public void setDrag(boolean drag) {
         this.hasDrag = drag;
     }
+
     public boolean hasDrag(boolean drag) {
         return this.hasDrag;
     }
@@ -70,20 +74,23 @@ public class BetterEntity extends Entity {
     public void setGravityDrag(boolean drag) {
         this.hasGravityDrag = drag;
     }
+
     public boolean hasGravityDrag(boolean drag) {
         return this.hasGravityDrag;
     }
-    
+
     public void setPhysics(boolean physics) {
         this.hasPhysics = physics;
     }
+
     public boolean hasPhysics() {
         return this.hasPhysics;
     }
-    
+
     public void setTicking(boolean ticking) {
         this.ticking = ticking;
     }
+
     public boolean isTicking() {
         return this.ticking;
     }

@@ -11,5 +11,4 @@ import org.jetbrains.annotations.Nullable;
  */
 public record RaycastResult(@Nullable Entity hitEntity, @Nullable Point hitPosition) {
     public static final RaycastResult HIT_NOTHING = new RaycastResult(null, null);
-
 }

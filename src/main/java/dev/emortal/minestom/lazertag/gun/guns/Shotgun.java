@@ -40,10 +40,7 @@ public class Shotgun extends Gun {
     @Override
     public void shoot(Player shooter) {
         super.shoot(shooter);
-        shooter.scheduler().buildTask(() -> {
-
-            playReloadSound(shooter);
-        }).delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS)).schedule();
+        shooter.scheduler().buildTask(() -> playReloadSound(shooter)).delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS)).schedule();
         shooter.setVelocity(shooter.getPosition().direction().mul(-15)); // TODO: Make sure this is TPS independant
     }
 }

@@ -29,5 +29,4 @@ public class ParticleUtil {
             current = current.add(dir);
         }
     }
-
 }

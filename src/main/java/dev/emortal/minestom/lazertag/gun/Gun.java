@@ -30,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 public abstract class Gun {
+    private static final Component RELOADING_COMPONENT = Component.text("RELOADING ", NamedTextColor.RED);
 
     public static final Tag<String> NAME_TAG = Tag.String("name");
     public static final Tag<Integer> AMMO_TAG = Tag.Integer("ammo");
@@ -38,7 +39,6 @@ public abstract class Gun {
 
     public final Map<UUID, Task> reloadTaskMap = new HashMap<>();
     public final Map<UUID, Task> burstTaskMap = new HashMap<>();
-
 
     protected final LazerTagGame game;
     protected final String name;
@@ -57,14 +57,12 @@ public abstract class Gun {
         float ammoPercentage = ammo / (float) this.itemInfo.ammo();
         renderAmmo(shooter, ammoPercentage, false);
 
-
         for (int i = 0; i < this.itemInfo.bullets(); i++) {
             Vec shootDir = spread(shooter.getPosition().direction(), this.itemInfo.spread());
             Pos eyePos = shooter.getPosition().add(0, shooter.getEyeHeight(), 0);
 
-            RaycastResult raycast = RaycastUtil.raycast(this.game.getInstance(), eyePos, shootDir, this.itemInfo.distance(), (entity) -> {
-                return entity != shooter && entity instanceof Player player && player.getGameMode() == GameMode.ADVENTURE;
-            });
+            RaycastResult raycast = RaycastUtil.raycast(this.game.getInstance(), eyePos, shootDir, this.itemInfo.distance(),
+                    (entity) -> entity != shooter && entity instanceof Player player && player.getGameMode() == GameMode.ADVENTURE);
             Point hitPoint = raycast.hitPosition() == null ? eyePos.add(shootDir.mul(this.itemInfo.distance())) : raycast.hitPosition();
 
             if (raycast.hitEntity() != null) { // Hit entity
@@ -75,7 +73,6 @@ public abstract class Gun {
 
             ParticleUtil.renderBulletTrail(this.game.getInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
         }
-
 
         // Decrease ammo
         shooter.setItemInMainHand(shooter.getItemInMainHand().withMeta(meta -> {
@@ -137,13 +134,11 @@ public abstract class Gun {
 
     protected void playReloadSound(Player player) {
         player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f));
-        player.scheduler().buildTask(() -> {
-            player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f));
-        }).delay(TaskSchedule.millis(150)).schedule();
+        player.scheduler().buildTask(() -> player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f)))
+                .delay(TaskSchedule.millis(150))
+                .schedule();
     }
 
-
-    private static final Component RELOADING_COMPONENT = Component.text("RELOADING ", NamedTextColor.RED);
     public void renderAmmo(Player player, float percentage, boolean reloading) {
         TextComponent.Builder component = Component.text();
 

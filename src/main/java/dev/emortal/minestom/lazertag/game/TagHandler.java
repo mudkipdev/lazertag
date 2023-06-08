@@ -19,5 +19,4 @@ public class TagHandler {
         player.removeTag(DamageHandler.COMBO_MILLIS_TAG);
         player.removeTag(DamageHandler.SPAWN_PROT_TAG);
     }
-
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GunRegistry {
+
     private final Map<String, Gun> registry = new HashMap<>();
     private final Gun[] guns;
     private final LazerTagGame game;

@@ -22,70 +22,71 @@ import java.util.function.Supplier;
 
 public class GunManager {
 
-    private final GunRegistry registry;
     private final LazerTagGame game;
+    private final GunRegistry registry;
+
     public GunManager(LazerTagGame game) {
         this.game = game;
         this.registry = new GunRegistry(game);
     }
 
     public void registerListeners(EventNode<InstanceEvent> eventNode) {
-        eventNode.addListener(InventoryPreClickEvent.class, e -> {
-            e.setCancelled(true);
-        });
-        eventNode.addListener(PlayerChangeHeldSlotEvent.class, e -> {
-            e.setCancelled(true);
-            e.getPlayer().setHeldItemSlot((byte) 4);
+        eventNode.addListener(InventoryPreClickEvent.class, event -> event.setCancelled(true));
+        eventNode.addListener(PlayerChangeHeldSlotEvent.class, event -> {
+            event.setCancelled(true);
+            event.getPlayer().setHeldItemSlot((byte) 4);
         });
 
-        eventNode.addListener(PlayerSwapItemEvent.class, e -> {
+        eventNode.addListener(PlayerSwapItemEvent.class, event -> {
             // Reload
-            e.setCancelled(true);
-            reloadListener(e);
+            event.setCancelled(true);
+            reloadListener(event);
         });
-        eventNode.addListener(ItemDropEvent.class, e -> {
+        eventNode.addListener(ItemDropEvent.class, event -> {
             // Reload
-            e.setCancelled(true);
-            reloadListener(e);
+            event.setCancelled(true);
+            reloadListener(event);
         });
 
-        eventNode.addListener(PlayerTickEvent.class, e -> {
-            if (e.getPlayer().getAliveTicks() % (20 * 2) == 0) { // Only render ammo every 3 seconds
-                Gun heldGun = getHeldPowerUp(e.getPlayer());
-                if (heldGun == null) return;
+        eventNode.addListener(PlayerTickEvent.class, event -> {
+            final Player player = event.getPlayer();
+            if (player.getAliveTicks() % (20 * 2) != 0) return; // Only render ammo every 3 seconds
 
-                int ammo = e.getPlayer().getItemInMainHand().meta().getTag(Gun.AMMO_TAG);
-                boolean reloading = e.getPlayer().getItemInMainHand().meta().hasTag(Gun.RELOADING_TAG);
-                if (reloading) return;
+            Gun heldGun = getHeldPowerUp(player);
+            if (heldGun == null) return;
 
-                float ammoPercentage = ammo / (float) heldGun.getItemInfo().ammo();
-                heldGun.renderAmmo(e.getPlayer(), ammoPercentage, false);
-            }
+            int ammo = player.getItemInMainHand().meta().getTag(Gun.AMMO_TAG);
+            boolean reloading = player.getItemInMainHand().meta().hasTag(Gun.RELOADING_TAG);
+            if (reloading) return;
+
+            float ammoPercentage = ammo / (float) heldGun.getItemInfo().ammo();
+            heldGun.renderAmmo(player, ammoPercentage, false);
         });
 
-        eventNode.addListener(PlayerUseItemEvent.class, e -> {
+        eventNode.addListener(PlayerUseItemEvent.class, event -> {
+            final Player player = event.getPlayer();
             // Shoot
-            e.setCancelled(true);
+            event.setCancelled(true);
 
             // TODO: Gun cooldown
 
-            ItemMeta itemMeta = e.getPlayer().getItemInMainHand().meta();
+            ItemMeta itemMeta = player.getItemInMainHand().meta();
             if (itemMeta.hasTag(Gun.RELOADING_TAG)) return;
             if (itemMeta.getTag(Gun.COOLDOWN_TAG) > System.currentTimeMillis()) return;
 
-            Gun heldGun = getHeldPowerUp(e.getPlayer());
+            Gun heldGun = getHeldPowerUp(player);
             if (heldGun == null) return;
 
             int burstAmount = heldGun.getItemInfo().burstAmount();
             int burstDelayTicks = (int) heldGun.getItemInfo().burstDelay() / MinecraftServer.TICK_MS;
 
-            heldGun.burstTaskMap.put(e.getPlayer().getUuid(), e.getPlayer().scheduler().submitTask(new Supplier<>() {
+            heldGun.burstTaskMap.put(player.getUuid(), player.scheduler().submitTask(new Supplier<>() {
                 int i = 0;
 
                 @Override
                 public TaskSchedule get() {
-                    heldGun.shoot(e.getPlayer());
-                    e.getInstance().playSound(heldGun.getItemInfo().sound(), e.getPlayer().getPosition());
+                    heldGun.shoot(player);
+                    event.getInstance().playSound(heldGun.getItemInfo().sound(), player.getPosition());
 
                     i++;
                     if (i >= burstAmount) {
@@ -98,15 +99,17 @@ public class GunManager {
         });
     }
 
-    private void reloadListener(PlayerInstanceEvent e) {
-        Gun heldGun = getHeldPowerUp(e.getPlayer());
+    private void reloadListener(PlayerInstanceEvent event) {
+        final Player player = event.getPlayer();
+
+        Gun heldGun = getHeldPowerUp(player);
         if (heldGun == null) return;
 
-        ItemMeta itemMeta = e.getPlayer().getItemInMainHand().meta();
+        ItemMeta itemMeta = player.getItemInMainHand().meta();
         if (itemMeta.hasTag(Gun.RELOADING_TAG)) return;
         if (itemMeta.getTag(Gun.AMMO_TAG) == heldGun.getItemInfo().ammo()) return;
 
-        heldGun.reload(e.getPlayer());
+        heldGun.reload(player);
     }
 
     public Gun getRandomGun() {
@@ -122,5 +125,4 @@ public class GunManager {
     private String getPowerUpName(TagReadable powerUp) {
         return powerUp.getTag(Gun.NAME_TAG);
     }
-
 }

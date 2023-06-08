@@ -38,6 +38,7 @@ public class RaycastUtil {
     public static boolean hasLineOfSight(Entity a, Entity b) {
         return hasLineOfSight(a.getInstance(), a.getPosition().add(0, a.getEyeHeight(), 0), b.getPosition().add(0, b.getEyeHeight(), 0));
     }
+
     public static boolean hasLineOfSight(Instance instance, Point startPoint, Point endPoint) {
         Vec direction = Vec.fromPoint(endPoint.sub(startPoint)).normalize();
         double maxDistance = startPoint.distance(endPoint);

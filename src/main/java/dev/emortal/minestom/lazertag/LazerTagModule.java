@@ -7,7 +7,7 @@ import dev.emortal.api.modules.ModuleData;
 import dev.emortal.api.modules.ModuleEnvironment;
 import dev.emortal.minestom.gamesdk.GameSdkModule;
 import dev.emortal.minestom.gamesdk.config.GameSdkConfig;
-import dev.emortal.minestom.lazertag.config.MapConfigJson;
+import dev.emortal.minestom.lazertag.config.MapConfig;
 import dev.emortal.minestom.lazertag.game.LazerTagGame;
 import dev.emortal.minestom.lazertag.map.MapManager;
 import dev.emortal.minestom.lazertag.raycast.RaycastUtil;
@@ -29,7 +29,7 @@ public final class LazerTagModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(LazerTagModule.class);
     private static final Gson GSON = new Gson();
 
-    public static Map<String, MapConfigJson> MAP_CONFIG_MAP;
+    public static Map<String, MapConfig> MAP_CONFIG_MAP;
 
     public LazerTagModule(final @NotNull ModuleEnvironment environment) {
         super(environment);
@@ -41,7 +41,7 @@ public final class LazerTagModule extends Module {
 
         InputStream is = getClass().getClassLoader().getResourceAsStream("lazertag.json");
         Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        Type type = new TypeToken<HashMap<String, MapConfigJson>>(){}.getType();
+        Type type = new TypeToken<HashMap<String, MapConfig>>(){}.getType();
         MAP_CONFIG_MAP = GSON.fromJson(reader, type);
 
         MapManager mapManager = new MapManager();

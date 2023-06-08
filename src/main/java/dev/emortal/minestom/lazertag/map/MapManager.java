@@ -82,11 +82,10 @@ public class MapManager {
         final String randomMapId = ENABLED_MAPS.get(ThreadLocalRandom.current().nextInt(ENABLED_MAPS.size()));
         final TNTLoader chunkLoader = this.mapLoaders.get(randomMapId);
 
-        return MinecraftServer.getInstanceManager()
-                .createInstanceContainer(DIMENSION_TYPE, chunkLoader);
+        return MinecraftServer.getInstanceManager().createInstanceContainer(DIMENSION_TYPE, chunkLoader);
     }
 
-    public String getNameWithoutExtension(String path) {
+    private String getNameWithoutExtension(String path) {
         int dotIndex = path.lastIndexOf('.');
         return (dotIndex == -1) ? path : path.substring(0, dotIndex);
     }

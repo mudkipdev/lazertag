@@ -39,15 +39,13 @@ public final class LazerTagGame extends Game {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     public static final int MINIMUM_PLAYERS = 2;
 
-
-
-
     private final Instance instance;
     private final GameCreationInfo creationInfo;
     private final GunManager gunManager;
     private final DamageHandler damageHandler;
     private final TagHandler tagHandler;
-    public LazerTagGame(final @NotNull GameCreationInfo creationInfo, @NotNull EventNode<Event> gameEventNode, @NotNull Instance instance) {
+
+    public LazerTagGame(@NotNull GameCreationInfo creationInfo, @NotNull EventNode<Event> gameEventNode, @NotNull Instance instance) {
         super(creationInfo, gameEventNode);
 
         this.creationInfo = creationInfo;
@@ -76,9 +74,11 @@ public final class LazerTagGame extends Game {
     public GameCreationInfo getCreationInfo() {
         return creationInfo;
     }
+
     public DamageHandler getDamageHandler() {
         return damageHandler;
     }
+
     public GunManager getGunManager() {
         return gunManager;
     }
@@ -130,12 +130,8 @@ public final class LazerTagGame extends Game {
         damageHandler.registerListeners(eventNode);
     }
 
-
-
-
     @Override
     public void cancel() {
-
     }
 
     private void victory() {

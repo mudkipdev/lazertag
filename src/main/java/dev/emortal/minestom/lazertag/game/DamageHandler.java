@@ -56,7 +56,8 @@ public class DamageHandler {
 
     private static final DecimalFormat HEALTH_FORMAT = new DecimalFormat("0.##");
 
-    LazerTagGame game;
+    private final LazerTagGame game;
+
     public DamageHandler(LazerTagGame game) {
         this.game = game;
     }
@@ -70,10 +71,10 @@ public class DamageHandler {
     }
 
 
-    public void damage(Player target, Player damager, Pos sourcePos, float damage) {
+    public void damage(Player target, Player attacker, Pos sourcePos, float damage) {
         if (target.getGameMode() != GameMode.ADVENTURE) return;
 
-        setSpawnProtection(damager, 0L);
+        setSpawnProtection(attacker, 0L);
         if (hasSpawnProtection(target)) return;
 
         if (getWouldDie(target, damage)) {
@@ -84,12 +85,12 @@ public class DamageHandler {
         Vec direction = Vec.fromPoint(sourcePos.sub(target.getPosition())).normalize();
         float yaw = PositionUtils.getLookYaw(direction.x(), direction.z());
 
-//        game.getInstance().sendGroupedPacket(new DamageEventPacket(target.getEntityId(), 0, damager.getEntityId(), damager.getEntityId(), sourcePos));
+//        game.getInstance().sendGroupedPacket(new DamageEventPacket(target.getEntityId(), 0, attacker.getEntityId(), attacker.getEntityId(), sourcePos));
         game.getInstance().sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw));
 
         spawnDamageIndicator(target.getPosition(), damage);
 
-        target.damage(DamageType.fromPlayer(damager), damage);
+        target.damage(DamageType.fromPlayer(attacker), damage);
     }
 
     private void spawnDamageIndicator(Pos playerPos, float damage) {
@@ -162,9 +163,7 @@ public class DamageHandler {
 
         if (player instanceof FakePlayer) { // For testing!
             player.setGameMode(GameMode.SPECTATOR);
-            player.scheduler().buildTask(() -> {
-                player.setGameMode(GameMode.ADVENTURE);
-            }).delay(TaskSchedule.tick(5)).schedule();
+            player.scheduler().buildTask(() -> player.setGameMode(GameMode.ADVENTURE)).delay(TaskSchedule.tick(5)).schedule();
             player.heal();
             return;
         }
@@ -176,9 +175,7 @@ public class DamageHandler {
         player.showTitle(YOU_DIED_TITLE);
         player.heal();
 
-        player.scheduler().buildTask(() -> {
-            startRespawnTimer(player);
-        }).delay(TaskSchedule.seconds(2)).schedule();
+        player.scheduler().buildTask(() -> startRespawnTimer(player)).delay(TaskSchedule.seconds(2)).schedule();
     }
 
     public void startRespawnTimer(Player player) {
@@ -240,7 +237,7 @@ public class DamageHandler {
             LOGGER.warn("Map id was null, defaulting to 'dizzymc'!");
             mapName = "dizzymc";
         }
-        Pos[] spawns = LazerTagModule.MAP_CONFIG_MAP.get(mapName).spawns;
+        final Pos[] spawns = LazerTagModule.MAP_CONFIG_MAP.get(mapName).spawns();
 
         return spawns[rand.nextInt(spawns.length)];
     }
