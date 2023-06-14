@@ -7,13 +7,13 @@ group = "dev.emortal.minestom"
 version = "1.0-SNAPSHOT"
 
 dependencies {
-    implementation("dev.emortal.minestom", "core", "06317cc")
-    implementation("dev.emortal.minestom", "game-sdk", "6502476")
+    implementation("dev.emortal.minestom", "core", "c0305b3")
+    implementation("dev.emortal.minestom", "game-sdk", "fec1d81")
 
     implementation("net.kyori:adventure-text-minimessage:4.12.0")
 //    implementation("dev.hollowcube:polar:1.1.1")
 
-    implementation("dev.emortal", "rayfast", "d198fa1")
+    implementation("dev.emortal", "rayfast", "bb9d190")
     implementation("dev.emortal.tnt", "TNT", "75546f5")
 }
 
