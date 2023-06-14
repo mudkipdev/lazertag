@@ -24,9 +24,26 @@ java {
 }
 
 tasks {
+    withType<JavaCompile> {
+        options.encoding = "UTF-8"
+    }
+
     shadowJar {
         mergeServiceFiles()
+
+        manifest {
+            attributes(
+                "Main-Class" to "dev.emortal.minestom.minesweeper.Entrypoint",
+                "Multi-Release" to true
+            )
+        }
     }
+
+    withType<AbstractArchiveTask> {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
+
     build {
         dependsOn(shadowJar)
     }
