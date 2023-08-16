@@ -1,6 +1,9 @@
 package dev.emortal.minestom.lazertag.gun;
 
 import dev.emortal.minestom.lazertag.game.LazerTagGame;
+import dev.emortal.minestom.lazertag.gun.guns.AssaultRifle;
+import dev.emortal.minestom.lazertag.gun.guns.BeeBlaster;
+import dev.emortal.minestom.lazertag.gun.guns.LazerMinigun;
 import dev.emortal.minestom.lazertag.gun.guns.Shotgun;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -57,7 +60,9 @@ public class GunRegistry {
     }
 
     public void registerGuns() {
-//        register(new LazerMinigun(game));
+        register(new AssaultRifle(game));
+        register(new BeeBlaster(game));
+        register(new LazerMinigun(game));
         register(new Shotgun(game));
     }
 }

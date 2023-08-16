@@ -163,6 +163,8 @@ public abstract class Gun {
     }
 
     public static Vec spread(Vec vec, double amount) {
+        if (amount == 0.0) return vec;
+
         var rand = ThreadLocalRandom.current();
         return vec
                 .rotateAroundX(rand.nextDouble(-amount, amount))

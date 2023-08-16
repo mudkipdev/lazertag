@@ -39,13 +39,18 @@ public final class LazerTagGame extends Game {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     public static final int MINIMUM_PLAYERS = 2;
 
+    public static final int KILLS_TO_WIN = 20;
+
+
+
+
     private final Instance instance;
     private final GameCreationInfo creationInfo;
     private final GunManager gunManager;
     private final DamageHandler damageHandler;
     private final TagHandler tagHandler;
-
-    public LazerTagGame(@NotNull GameCreationInfo creationInfo, @NotNull EventNode<Event> gameEventNode, @NotNull Instance instance) {
+    private final ScoreboardHandler scoreboardHandler;
+    public LazerTagGame(final @NotNull GameCreationInfo creationInfo, @NotNull EventNode<Event> gameEventNode, @NotNull Instance instance) {
         super(creationInfo, gameEventNode);
 
         this.creationInfo = creationInfo;
@@ -65,6 +70,7 @@ public final class LazerTagGame extends Game {
         this.gunManager = new GunManager(this);
         this.damageHandler = new DamageHandler(this);
         this.tagHandler = new TagHandler();
+        this.scoreboardHandler = new ScoreboardHandler(this);
     }
 
     public Instance getInstance() {
@@ -74,17 +80,17 @@ public final class LazerTagGame extends Game {
     public GameCreationInfo getCreationInfo() {
         return creationInfo;
     }
-
     public DamageHandler getDamageHandler() {
         return damageHandler;
     }
-
     public GunManager getGunManager() {
         return gunManager;
     }
-
     public TagHandler getTagHandler() {
         return tagHandler;
+    }
+    public ScoreboardHandler getScoreboardHandler() {
+        return scoreboardHandler;
     }
 
     @Override
@@ -114,6 +120,7 @@ public final class LazerTagGame extends Game {
             tagHandler.initializePlayerTags(player);
             player.setHeldItemSlot((byte) 4);
             damageHandler.respawn(player);
+            scoreboardHandler.showSidebar(player);
         }
 
         if (GameSdkModule.TEST_MODE) {
@@ -130,11 +137,13 @@ public final class LazerTagGame extends Game {
         damageHandler.registerListeners(eventNode);
     }
 
+
     @Override
     public void cancel() {
+
     }
 
-    private void victory() {
+    public void victory() {
 //        if (gameTimerTask != null) gameTimerTask.cancel();
 
         Title victoryTitle = Title.title(

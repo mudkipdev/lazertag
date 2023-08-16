@@ -7,6 +7,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -36,28 +37,28 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-import static net.kyori.adventure.title.Title.DEFAULT_TIMES;
-
 public class DamageHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DamageHandler.class);
     private static final Title YOU_DIED_TITLE = Title.title(
             Component.text("YOU DIED", NamedTextColor.RED, TextDecoration.BOLD),
             Component.empty(),
-            DEFAULT_TIMES
+            Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofSeconds(1))
     );
     public static final Tag<Long> SPAWN_PROT_TAG = Tag.Long("spawnProt");
 
-    private static final long COMBO_MILLIS_DEFAULT = 4000;
-    public static final Tag<Long> COMBO_MILLIS_TAG = Tag.Long("comboMillis");
     public static final Tag<Integer> COMBO_TAG = Tag.Integer("combo");
     public static final Tag<Integer> KILLS_TAG = Tag.Integer("kills");
     public static final Tag<Integer> DEATHS_TAG = Tag.Integer("deaths");
 
     private static final DecimalFormat HEALTH_FORMAT = new DecimalFormat("0.##");
 
-    private final LazerTagGame game;
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
+    private boolean firstKill = true;
+    private int killLeader = 0;
+
+    LazerTagGame game;
     public DamageHandler(LazerTagGame game) {
         this.game = game;
     }
@@ -71,10 +72,10 @@ public class DamageHandler {
     }
 
 
-    public void damage(Player target, Player attacker, Pos sourcePos, float damage) {
+    public void damage(Player target, Player damager, Pos sourcePos, float damage) {
         if (target.getGameMode() != GameMode.ADVENTURE) return;
 
-        setSpawnProtection(attacker, 0L);
+        setSpawnProtection(damager, 0L);
         if (hasSpawnProtection(target)) return;
 
         if (getWouldDie(target, damage)) {
@@ -85,12 +86,12 @@ public class DamageHandler {
         Vec direction = Vec.fromPoint(sourcePos.sub(target.getPosition())).normalize();
         float yaw = PositionUtils.getLookYaw(direction.x(), direction.z());
 
-//        game.getInstance().sendGroupedPacket(new DamageEventPacket(target.getEntityId(), 0, attacker.getEntityId(), attacker.getEntityId(), sourcePos));
-        game.getInstance().sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw));
+//        game.getInstance().sendGroupedPacket(new DamageEventPacket(target.getEntityId(), 0, damager.getEntityId(), damager.getEntityId(), sourcePos));
+        game.getInstance().sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw + 90));
 
         spawnDamageIndicator(target.getPosition(), damage);
 
-        target.damage(DamageType.fromPlayer(attacker), damage);
+        target.damage(DamageType.fromPlayer(damager), damage);
     }
 
     private void spawnDamageIndicator(Pos playerPos, float damage) {
@@ -119,6 +120,13 @@ public class DamageHandler {
                     .build()
         );
         meta.setNotifyAboutChanges(true);
+
+        // Animated rainbow effect
+        if (damage > 18) {
+            entity.scheduler().buildTask(() -> {
+                meta.setText(MINI_MESSAGE.deserialize("<rainbow:" + entity.getAliveTicks() + ">❤ " + HEALTH_FORMAT.format(damage)));
+            }).repeat(TaskSchedule.tick(3)).schedule();
+        }
 
         var rand = ThreadLocalRandom.current();
 
@@ -150,32 +158,64 @@ public class DamageHandler {
 
             killer.showTitle(Title.title(
                     Component.empty(),
-                    Component.text("☠" + player.getUsername(), NamedTextColor.RED),
+                    Component.text("☠ " + player.getUsername(), NamedTextColor.RED),
                     Title.Times.times(Duration.ZERO, Duration.ofMillis(500), Duration.ofMillis(700))
             ));
 
+
+            if (firstKill) {
+                killer.sendActionBar(Component.text("You got the first kill of the game!", NamedTextColor.YELLOW));
+                game.getInstance().sendMessage(
+                        Component.text()
+                                .append(Component.text("☠", NamedTextColor.GOLD))
+                                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                                .append(Component.text(killer.getUsername(), NamedTextColor.GOLD))
+                                .append(Component.text(" got the ", NamedTextColor.GRAY))
+                                .append(Component.text("first kill of the game", NamedTextColor.WHITE))
+                                .append(Component.text("!", NamedTextColor.GRAY))
+                                .build()
+                );
+                firstKill = false;
+            }
+
             int combo = getCombo(killer);
             killer.playSound(Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 2f, 1f + (combo * 0.1f)), Sound.Emitter.self());
-            incrementCombo(killer);
+            int kills = incrementKills(killer);
+
+            if (kills > killLeader) {
+                killLeader = kills;
+                game.getInstance().sendMessage(
+                        Component.text()
+                                .append(Component.text("☠", NamedTextColor.GOLD))
+                                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                                .append(Component.text(killer.getUsername(), NamedTextColor.GOLD))
+                                .append(Component.text(" is the new ", NamedTextColor.GRAY))
+                                .append(Component.text("kill leader", NamedTextColor.WHITE))
+                                .append(Component.text("!", NamedTextColor.GRAY))
+                                .build()
+                );
+            }
         } else {
             game.getInstance().sendMessage(getDeathMessage(player));
         }
 
         if (player instanceof FakePlayer) { // For testing!
             player.setGameMode(GameMode.SPECTATOR);
-            player.scheduler().buildTask(() -> player.setGameMode(GameMode.ADVENTURE)).delay(TaskSchedule.tick(5)).schedule();
+            player.scheduler().buildTask(() -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            }).delay(TaskSchedule.tick(5)).schedule();
             player.heal();
             return;
         }
-
-        // TODO: calculate killer and show them kill notification
 
         player.setAutoViewable(false);
         player.setGameMode(GameMode.SPECTATOR);
         player.showTitle(YOU_DIED_TITLE);
         player.heal();
 
-        player.scheduler().buildTask(() -> startRespawnTimer(player)).delay(TaskSchedule.seconds(2)).schedule();
+        player.scheduler().buildTask(() -> {
+            startRespawnTimer(player);
+        }).delay(TaskSchedule.seconds(2)).schedule();
     }
 
     public void startRespawnTimer(Player player) {
@@ -237,7 +277,7 @@ public class DamageHandler {
             LOGGER.warn("Map id was null, defaulting to 'dizzymc'!");
             mapName = "dizzymc";
         }
-        final Pos[] spawns = LazerTagModule.MAP_CONFIG_MAP.get(mapName).spawns();
+        Pos[] spawns = LazerTagModule.MAP_CONFIG_MAP.get(mapName).spawns();
 
         return spawns[rand.nextInt(spawns.length)];
     }
@@ -261,17 +301,24 @@ public class DamageHandler {
     }
 
     private int getCombo(Player player) {
-        long comboMillis = player.getTag(COMBO_MILLIS_TAG);
-        if (comboMillis < System.currentTimeMillis()) { // Time has passed for combo
-            player.setTag(COMBO_TAG, 0);
-            return 0;
-        }
         return player.getTag(COMBO_TAG);
     }
     private void incrementCombo(Player player) {
         int currentCombo = player.getTag(COMBO_TAG);
         player.setTag(COMBO_TAG, currentCombo + 1);
-        player.setTag(COMBO_MILLIS_TAG, System.currentTimeMillis() + COMBO_MILLIS_DEFAULT);
+    }
+    private int incrementKills(Player player) {
+        if (player.getTag(KILLS_TAG) > LazerTagGame.KILLS_TO_WIN) {
+            game.victory();
+        }
+
+        incrementCombo(player);
+        int currentKills = player.getTag(KILLS_TAG);
+        player.setTag(KILLS_TAG, currentKills + 1);
+
+        game.getScoreboardHandler().refreshScoreboard();
+
+        return currentKills + 1;
     }
 
     public Component getDeathMessage(Player player) {

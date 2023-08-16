@@ -8,7 +8,6 @@ public class TagHandler {
         player.setTag(DamageHandler.KILLS_TAG, 0);
         player.setTag(DamageHandler.DEATHS_TAG, 0);
         player.setTag(DamageHandler.COMBO_TAG, 0);
-        player.setTag(DamageHandler.COMBO_MILLIS_TAG, 0L);
         player.setTag(DamageHandler.SPAWN_PROT_TAG, 0L);
     }
 
@@ -16,7 +15,6 @@ public class TagHandler {
         player.removeTag(DamageHandler.KILLS_TAG);
         player.removeTag(DamageHandler.DEATHS_TAG);
         player.removeTag(DamageHandler.COMBO_TAG);
-        player.removeTag(DamageHandler.COMBO_MILLIS_TAG);
         player.removeTag(DamageHandler.SPAWN_PROT_TAG);
     }
 }

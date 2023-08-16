@@ -7,14 +7,13 @@ group = "dev.emortal.minestom"
 version = "1.0-SNAPSHOT"
 
 dependencies {
-    implementation("dev.emortal.minestom", "core", "c0305b3")
-    implementation("dev.emortal.minestom", "game-sdk", "fec1d81")
+    implementation("dev.emortal.minestom", "core", "85ae46e")
+    implementation("dev.emortal.minestom", "game-sdk", "4d22719")
 
     implementation("net.kyori:adventure-text-minimessage:4.12.0")
-//    implementation("dev.hollowcube:polar:1.1.1")
+    implementation("dev.hollowcube:polar:1.2.0")
 
-    implementation("dev.emortal", "rayfast", "bb9d190")
-    implementation("dev.emortal.tnt", "TNT", "75546f5")
+    implementation("dev.emortal", "rayfast", "d198fa1")
 }
 
 java {
@@ -24,26 +23,6 @@ java {
 }
 
 tasks {
-    withType<JavaCompile> {
-        options.encoding = "UTF-8"
-    }
-
-    shadowJar {
-        mergeServiceFiles()
-
-        manifest {
-            attributes(
-                "Main-Class" to "dev.emortal.minestom.minesweeper.Entrypoint",
-                "Multi-Release" to true
-            )
-        }
-    }
-
-    withType<AbstractArchiveTask> {
-        isPreserveFileTimestamps = false
-        isReproducibleFileOrder = true
-    }
-
     build {
         dependsOn(shadowJar)
     }

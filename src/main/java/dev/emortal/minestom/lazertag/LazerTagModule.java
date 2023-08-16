@@ -37,6 +37,7 @@ public final class LazerTagModule extends Module {
 
     @Override
     public boolean onLoad() {
+        System.setProperty("polar.anvil_rw_mode", "true");
         RaycastUtil.init();
 
         InputStream is = getClass().getClassLoader().getResourceAsStream("lazertag.json");

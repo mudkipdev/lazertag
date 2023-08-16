@@ -17,9 +17,12 @@ public class BetterEntityProjectile extends EntityProjectile {
     public boolean ticking = true;
     public boolean hasDrag = true;
     public boolean hasGravityDrag = true;
+    private Runnable onCollide;
 
-    public BetterEntityProjectile(@Nullable Entity shooter, @NotNull EntityType entityType) {
+    public BetterEntityProjectile(@Nullable Entity shooter, @NotNull EntityType entityType, @Nullable Runnable onCollide) {
         super(shooter, entityType);
+
+        this.onCollide = onCollide;
     }
 
     @Override
