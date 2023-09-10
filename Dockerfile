@@ -3,8 +3,12 @@ FROM --platform=$BUILDPLATFORM eclipse-temurin:20-jre
 RUN mkdir /app
 WORKDIR /app
 
-COPY build/libs/*-all.jar /app/lazertag.jar
-COPY run/maps/ /app/maps/
+# Add libraries required for pyroscope
+RUN apt-get install wget \
+    libstdc++6 libstdc++ # Add libraries required for pyroscope
 
-CMD ["java", "-jar", "/app/lazertag.jar"]
+COPY build/libs/*-all.jar /app/lazertag.jar
+COPY run/maps /app/maps
+
+CMD ["java", "--enable-preview", "-jar", "/app/lazertag.jar"]
 
