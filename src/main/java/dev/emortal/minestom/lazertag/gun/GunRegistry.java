@@ -8,61 +8,58 @@ import dev.emortal.minestom.lazertag.gun.guns.Shotgun;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class GunRegistry {
+public final class GunRegistry {
+
+    private final @NotNull LazerTagGame game;
+    private final @NotNull List<Gun> guns;
 
     private final Map<String, Gun> registry = new HashMap<>();
-    private final Gun[] guns;
-    private final LazerTagGame game;
 
-    public GunRegistry(LazerTagGame game) {
+    public GunRegistry(@NotNull LazerTagGame game) {
         this.game = game;
 
-        registerGuns();
-        guns = registry.values().toArray(new Gun[0]);
+        this.registerGuns();
+        this.guns = List.copyOf(this.registry.values());
     }
 
-    public @Nullable Gun getByName(final @NotNull String name) {
-        return registry.get(name);
+    public @Nullable Gun getByName(@NotNull String name) {
+        return this.registry.get(name);
     }
 
     public @NotNull Gun getRandomGun() {
         int totalWeight = 0;
-        for (Gun value : guns) {
+        for (Gun value : this.guns) {
             totalWeight += value.getItemInfo().rarity().getWeight();
         }
 
         int index = 0;
         int randomIndex = ThreadLocalRandom.current().nextInt(totalWeight + 1);
-        while (index < guns.length - 1) {
-            randomIndex -= guns[index].getItemInfo().rarity().getWeight();
+        while (index < this.guns.size() - 1) {
+            randomIndex -= guns.get(index).getItemInfo().rarity().getWeight();
             if (randomIndex <= 0) break;
             index++;
         }
 
-        return guns[index];
+        return this.guns.get(index);
     }
 
     public void register(@NotNull Gun powerUp) {
-        final String name = powerUp.getName();
-        if (registry.containsKey(name)) {
+        String name = powerUp.getName();
+        if (this.registry.containsKey(name)) {
             throw new IllegalArgumentException("Power up with name " + name + " already exists!");
         }
-        registry.put(name, powerUp);
-    }
-
-    public @NotNull Collection<String> getPowerUpNames() {
-        return registry.keySet();
+        this.registry.put(name, powerUp);
     }
 
     public void registerGuns() {
-        register(new AssaultRifle(game));
-        register(new BeeBlaster(game));
-        register(new LazerMinigun(game));
-        register(new Shotgun(game));
+        this.register(new AssaultRifle(this.game));
+        this.register(new BeeBlaster(this.game));
+        this.register(new LazerMinigun(this.game));
+        this.register(new Shotgun(this.game));
     }
 }

@@ -6,10 +6,11 @@ import net.minestom.server.coordinate.Vec;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
 import net.minestom.server.particle.ParticleCreator;
+import org.jetbrains.annotations.NotNull;
 
-public class ParticleUtil {
+public final class ParticleUtil {
 
-    public static void renderBulletTrail(PacketGroupingAudience audience, Point start, Point end, double step) {
+    public static void renderBulletTrail(@NotNull PacketGroupingAudience audience, @NotNull Point start, @NotNull Point end, double step) {
         Point current = Vec.fromPoint(start);
         double distRemaining = start.distanceSquared(end);
 
@@ -28,5 +29,8 @@ public class ParticleUtil {
             distRemaining -= dirLength;
             current = current.add(dir);
         }
+    }
+
+    private ParticleUtil() {
     }
 }

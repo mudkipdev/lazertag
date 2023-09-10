@@ -1,6 +1,6 @@
 package dev.emortal.minestom.lazertag.game;
 
-import dev.emortal.minestom.lazertag.LazerTagModule;
+import dev.emortal.minestom.lazertag.map.LoadedMap;
 import dev.emortal.minestom.lazertag.util.entity.BetterEntity;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
@@ -19,27 +19,23 @@ import net.minestom.server.entity.damage.EntityDamage;
 import net.minestom.server.entity.fakeplayer.FakePlayer;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
-import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerMoveEvent;
-import net.minestom.server.event.trait.InstanceEvent;
 import net.minestom.server.network.packet.server.play.HitAnimationPacket;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.tag.Tag;
 import net.minestom.server.timer.TaskSchedule;
 import net.minestom.server.utils.MathUtils;
 import net.minestom.server.utils.position.PositionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-public class DamageHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DamageHandler.class);
+public final class DamageHandler {
     private static final Title YOU_DIED_TITLE = Title.title(
             Component.text("YOU DIED", NamedTextColor.RED, TextDecoration.BOLD),
             Component.empty(),
@@ -55,31 +51,35 @@ public class DamageHandler {
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
+    private final @NotNull LazerTagGame game;
+    private final @NotNull LoadedMap map;
+
     private boolean firstKill = true;
     private int killLeader = 0;
 
-    LazerTagGame game;
-    public DamageHandler(LazerTagGame game) {
+    public DamageHandler(@NotNull LazerTagGame game, @NotNull LoadedMap map) {
         this.game = game;
+        this.map = map;
     }
 
-    public void registerListeners(EventNode<InstanceEvent> eventNode) {
-        eventNode.addListener(PlayerMoveEvent.class, e -> {
-            if (e.getNewPosition().blockY() < 0) {
-                kill(e.getPlayer());
-            }
-        });
+    public void registerListeners() {
+        this.game.getEventNode().addListener(PlayerMoveEvent.class, this::onMove);
     }
 
+    private void onMove(@NotNull PlayerMoveEvent event) {
+        if (event.getNewPosition().blockY() < 0) {
+            this.kill(event.getPlayer());
+        }
+    }
 
-    public void damage(Player target, Player damager, Pos sourcePos, float damage) {
+    public void damage(@NotNull Player target, @NotNull Player damager, @NotNull Pos sourcePos, float damage) {
         if (target.getGameMode() != GameMode.ADVENTURE) return;
 
-        setSpawnProtection(damager, 0L);
-        if (hasSpawnProtection(target)) return;
+        this.setSpawnProtection(damager, 0L);
+        if (this.hasSpawnProtection(target)) return;
 
-        if (getWouldDie(target, damage)) {
-            kill(target);
+        if (this.wouldDie(target, damage)) {
+            this.kill(target);
             return;
         }
 
@@ -87,9 +87,9 @@ public class DamageHandler {
         float yaw = PositionUtils.getLookYaw(direction.x(), direction.z());
 
 //        game.getInstance().sendGroupedPacket(new DamageEventPacket(target.getEntityId(), 0, damager.getEntityId(), damager.getEntityId(), sourcePos));
-        game.getInstance().sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw + 90));
+        this.game.sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw + 90));
 
-        spawnDamageIndicator(target.getPosition(), damage);
+        this.spawnDamageIndicator(target.getPosition(), damage);
 
         target.damage(DamageType.fromPlayer(damager), damage);
     }
@@ -113,38 +113,35 @@ public class DamageHandler {
         meta.setBillboardRenderConstraints(AbstractDisplayMeta.BillboardConstraints.CENTER);
         meta.setScale(new Vec(2, 2, 0).mul(healthPercentage).add(1, 1, 1));
         meta.setShadow(true);
-        meta.setText(
-                Component.text()
-                    .append(Component.text("❤ ", color))
-                    .append(Component.text(HEALTH_FORMAT.format(damage), lighterColor))
-                    .build()
-        );
+        meta.setText(Component.text()
+                .append(Component.text("❤ ", color))
+                .append(Component.text(HEALTH_FORMAT.format(damage), lighterColor))
+                .build());
         meta.setNotifyAboutChanges(true);
 
         // Animated rainbow effect
         if (damage > 18) {
-            entity.scheduler().buildTask(() -> {
-                meta.setText(MINI_MESSAGE.deserialize("<rainbow:" + entity.getAliveTicks() + ">❤ " + HEALTH_FORMAT.format(damage)));
-            }).repeat(TaskSchedule.tick(3)).schedule();
+            Runnable task = () -> meta.setText(MINI_MESSAGE.deserialize("<rainbow:" + entity.getAliveTicks() + ">❤ " + HEALTH_FORMAT.format(damage)));
+            entity.scheduler().buildTask(task).repeat(TaskSchedule.tick(3)).schedule();
         }
 
-        var rand = ThreadLocalRandom.current();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        entity.setVelocity(new Vec(
-                rand.nextDouble(-1, 1),
-                rand.nextDouble(4, 5),
-                rand.nextDouble(-1, 1)
-        ).mul(2)); // TODO: Make sure this is TPS independant
+        // TODO: Make sure this is TPS independent
+        entity.setVelocity(new Vec(random.nextDouble(-1, 1), random.nextDouble(4, 5), random.nextDouble(-1, 1)).mul(2));
 
-//        Pos newPos = playerPos.add(rand.nextDouble(-1.5, 1.5), rand.nextDouble(1.7, 2.2), rand.nextDouble(-1.5, 1.5));
+//        Pos newPos = playerPos.add(random.nextDouble(-1.5, 1.5), random.nextDouble(1.7, 2.2), random.nextDouble(-1.5, 1.5));
         Pos newPos = playerPos.add(0, 1.7, 0);
 
         entity.scheduleRemove(1, ChronoUnit.SECONDS);
-        entity.scheduler().buildTask(() -> {
-            if (entity.isOnGround()) entity.remove();
-        }).repeat(TaskSchedule.nextTick()).schedule();
+        entity.scheduler()
+                .buildTask(() -> {
+                    if (entity.isOnGround()) entity.remove();
+                })
+                .repeat(TaskSchedule.nextTick())
+                .schedule();
 
-        entity.setInstance(game.getInstance(), newPos);
+        entity.setInstance(this.map.instance(), newPos);
     }
 
     public void kill(Player player) {
@@ -154,7 +151,7 @@ public class DamageHandler {
                 player.getLastDamageSource() instanceof EntityDamage entityDamage
                 && entityDamage.getSource() instanceof Player killer
         ) {
-            game.getInstance().sendMessage(getDeathMessage(player, killer));
+            this.game.sendMessage(getDeathMessage(player, killer));
 
             killer.showTitle(Title.title(
                     Component.empty(),
@@ -162,10 +159,9 @@ public class DamageHandler {
                     Title.Times.times(Duration.ZERO, Duration.ofMillis(500), Duration.ofMillis(700))
             ));
 
-
-            if (firstKill) {
+            if (this.firstKill) {
                 killer.sendActionBar(Component.text("You got the first kill of the game!", NamedTextColor.YELLOW));
-                game.getInstance().sendMessage(
+                this.game.sendMessage(
                         Component.text()
                                 .append(Component.text("☠", NamedTextColor.GOLD))
                                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
@@ -175,35 +171,31 @@ public class DamageHandler {
                                 .append(Component.text("!", NamedTextColor.GRAY))
                                 .build()
                 );
-                firstKill = false;
+                this.firstKill = false;
             }
 
-            int combo = getCombo(killer);
+            int combo = this.getCombo(killer);
             killer.playSound(Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 2f, 1f + (combo * 0.1f)), Sound.Emitter.self());
-            int kills = incrementKills(killer);
+            int kills = this.incrementKills(killer);
 
-            if (kills > killLeader) {
-                killLeader = kills;
-                game.getInstance().sendMessage(
-                        Component.text()
-                                .append(Component.text("☠", NamedTextColor.GOLD))
-                                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
-                                .append(Component.text(killer.getUsername(), NamedTextColor.GOLD))
-                                .append(Component.text(" is the new ", NamedTextColor.GRAY))
-                                .append(Component.text("kill leader", NamedTextColor.WHITE))
-                                .append(Component.text("!", NamedTextColor.GRAY))
-                                .build()
-                );
+            if (kills > this.killLeader) {
+                this.killLeader = kills;
+                this.game.sendMessage(Component.text()
+                        .append(Component.text("☠", NamedTextColor.GOLD))
+                        .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text(killer.getUsername(), NamedTextColor.GOLD))
+                        .append(Component.text(" is the new ", NamedTextColor.GRAY))
+                        .append(Component.text("kill leader", NamedTextColor.WHITE))
+                        .append(Component.text("!", NamedTextColor.GRAY))
+                        .build());
             }
         } else {
-            game.getInstance().sendMessage(getDeathMessage(player));
+            this.game.sendMessage(this.getDeathMessage(player));
         }
 
         if (player instanceof FakePlayer) { // For testing!
             player.setGameMode(GameMode.SPECTATOR);
-            player.scheduler().buildTask(() -> {
-                player.setGameMode(GameMode.ADVENTURE);
-            }).delay(TaskSchedule.tick(5)).schedule();
+            player.scheduler().buildTask(() -> player.setGameMode(GameMode.ADVENTURE)).delay(TaskSchedule.tick(5)).schedule();
             player.heal();
             return;
         }
@@ -213,9 +205,7 @@ public class DamageHandler {
         player.showTitle(YOU_DIED_TITLE);
         player.heal();
 
-        player.scheduler().buildTask(() -> {
-            startRespawnTimer(player);
-        }).delay(TaskSchedule.seconds(2)).schedule();
+        player.scheduler().buildTask(() -> this.startRespawnTimer(player)).delay(TaskSchedule.seconds(2)).schedule();
     }
 
     public void startRespawnTimer(Player player) {
@@ -225,24 +215,20 @@ public class DamageHandler {
 
             @Override
             public TaskSchedule get() {
-                secondsLeft--;
+                this.secondsLeft--;
 
                 player.playSound(
                         Sound.sound(SoundEvent.BLOCK_WOODEN_BUTTON_CLICK_ON, Sound.Source.BLOCK, 1f, 1f),
                         Sound.Emitter.self()
                 );
-                player.showTitle(
-                        Title.title(
-                                Component.text(secondsLeft, NamedTextColor.GOLD, TextDecoration.BOLD),
-                                Component.empty(),
-                                Title.Times.times(
-                                        Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(200)
-                                )
-                        )
-                );
+                player.showTitle(Title.title(
+                        Component.text(this.secondsLeft, NamedTextColor.GOLD, TextDecoration.BOLD),
+                        Component.empty(),
+                        Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(200))
+                ));
 
-                if (secondsLeft == 0) {
-                    respawn(player);
+                if (this.secondsLeft == 0) {
+                    DamageHandler.this.respawn(player);
                     return TaskSchedule.stop();
                 }
 
@@ -251,77 +237,74 @@ public class DamageHandler {
         });
     }
 
-    public void respawn(Player player) {
-        player.teleport(getRandomSpawnPoint()).thenRun(() -> {
-            player.playSound(
-                    Sound.sound(SoundEvent.BLOCK_BEACON_ACTIVATE, Sound.Source.MASTER, 1f, 2f),
-                    Sound.Emitter.self()
-            );
-
-            player.setAutoViewable(true);
-            player.setGameMode(GameMode.ADVENTURE);
-            player.clearTitle();
-            giveRandomGun(player);
-        });
+    public void respawn(@NotNull Player player) {
+        player.teleport(this.getRandomSpawnPoint()).thenRun(() -> this.reset(player));
     }
 
-    private void giveRandomGun(Player player) {
-        player.setItemInMainHand(game.getGunManager().getRandomGun().createItem());
+    private void reset(@NotNull Player player) {
+        player.playSound(
+                Sound.sound(SoundEvent.BLOCK_BEACON_ACTIVATE, Sound.Source.MASTER, 1f, 2f),
+                Sound.Emitter.self()
+        );
+
+        player.setAutoViewable(true);
+        player.setGameMode(GameMode.ADVENTURE);
+        player.clearTitle();
+        this.giveRandomGun(player);
     }
 
-    private Pos getRandomSpawnPoint() {
-        var rand = ThreadLocalRandom.current();
-
-        String mapName = game.getCreationInfo().mapId();
-        if (mapName == null) {
-            LOGGER.warn("Map id was null, defaulting to 'dizzymc'!");
-            mapName = "dizzymc";
-        }
-        Pos[] spawns = LazerTagModule.MAP_CONFIG_MAP.get(mapName).spawns();
-
-        return spawns[rand.nextInt(spawns.length)];
+    private void giveRandomGun(@NotNull Player player) {
+        player.setItemInMainHand(this.game.getGunManager().getRandomGun().createItem());
     }
 
-    private boolean getWouldDie(Player player, float damage) {
+    private @NotNull Pos getRandomSpawnPoint() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        List<Pos> spawns = this.map.data().spawns();
+        return spawns.get(random.nextInt(spawns.size()));
+    }
+
+    private boolean wouldDie(@NotNull Player player, float damage) {
         return player.getHealth() <= damage;
     }
 
-    public void setSpawnProtection(Player player, long millis) {
+    public void setSpawnProtection(@NotNull Player player, long millis) {
         if (millis == 0) {
             player.removeTag(SPAWN_PROT_TAG);
             return;
         }
         player.setTag(SPAWN_PROT_TAG, System.currentTimeMillis() + millis);
     }
-    public boolean hasSpawnProtection(Player player) {
-        Long spawnProtMillis = player.getTag(SPAWN_PROT_TAG);
-        if (spawnProtMillis == null) return false;
+    public boolean hasSpawnProtection(@NotNull Player player) {
+        Long spawnProtectionMillis = player.getTag(SPAWN_PROT_TAG);
+        if (spawnProtectionMillis == null) return false;
 
-        return System.currentTimeMillis() > spawnProtMillis;
+        return System.currentTimeMillis() > spawnProtectionMillis;
     }
 
-    private int getCombo(Player player) {
+    private int getCombo(@NotNull Player player) {
         return player.getTag(COMBO_TAG);
     }
-    private void incrementCombo(Player player) {
+
+    private void incrementCombo(@NotNull Player player) {
         int currentCombo = player.getTag(COMBO_TAG);
         player.setTag(COMBO_TAG, currentCombo + 1);
     }
-    private int incrementKills(Player player) {
+
+    private int incrementKills(@NotNull Player player) {
         if (player.getTag(KILLS_TAG) > LazerTagGame.KILLS_TO_WIN) {
-            game.victory();
+            this.game.victory();
         }
 
-        incrementCombo(player);
+        this.incrementCombo(player);
         int currentKills = player.getTag(KILLS_TAG);
-        player.setTag(KILLS_TAG, currentKills + 1);
 
-        game.getScoreboardHandler().refreshScoreboard();
+        player.setTag(KILLS_TAG, currentKills + 1);
+        this.game.getScoreboardHandler().refreshScoreboard();
 
         return currentKills + 1;
     }
 
-    public Component getDeathMessage(Player player) {
+    public @NotNull Component getDeathMessage(@NotNull Player player) {
         return Component.text()
                 .append(Component.text("☠", NamedTextColor.RED))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
@@ -329,7 +312,8 @@ public class DamageHandler {
                 .append(Component.text(" died", NamedTextColor.GRAY))
                 .build();
     }
-    public Component getDeathMessage(Player player, Player killer) {
+
+    public @NotNull Component getDeathMessage(@NotNull Player player, @NotNull Player killer) {
         return Component.text()
                 .append(Component.text("☠", NamedTextColor.RED))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
@@ -340,5 +324,4 @@ public class DamageHandler {
 //                .append(Component.text(gunName, NamedTextColor.GOLD))
                 .build();
     }
-
 }

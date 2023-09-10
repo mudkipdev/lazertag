@@ -20,12 +20,9 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.tag.Tag;
-import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
@@ -37,32 +34,29 @@ public abstract class Gun {
     public static final Tag<Boolean> RELOADING_TAG = Tag.Boolean("reloading");
     public static final Tag<Long> COOLDOWN_TAG = Tag.Long("cooldown");
 
-    public final Map<UUID, Task> reloadTaskMap = new HashMap<>();
-    public final Map<UUID, Task> burstTaskMap = new HashMap<>();
+    protected final @NotNull LazerTagGame game;
+    protected final @NotNull String name;
+    private final @NotNull GunItemInfo itemInfo;
 
-    protected final LazerTagGame game;
-    protected final String name;
-    private final GunItemInfo itemInfo;
-
-    public Gun(LazerTagGame game, String name, GunItemInfo itemInfo) {
+    protected Gun(@NotNull LazerTagGame game, @NotNull String name, @NotNull GunItemInfo itemInfo) {
         this.game = game;
         this.name = name;
         this.itemInfo = itemInfo;
     }
 
-    public void shoot(Player shooter) {
+    public void shoot(@NotNull Player shooter) {
         int ammo = shooter.getItemInMainHand().meta().getTag(AMMO_TAG) - 1;
         if (ammo < 0) return;
 
         float ammoPercentage = ammo / (float) this.itemInfo.ammo();
-        renderAmmo(shooter, ammoPercentage, false);
+        this.renderAmmo(shooter, ammoPercentage, false);
 
         for (int i = 0; i < this.itemInfo.bullets(); i++) {
             Vec shootDir = spread(shooter.getPosition().direction(), this.itemInfo.spread());
             Pos eyePos = shooter.getPosition().add(0, shooter.getEyeHeight(), 0);
 
-            RaycastResult raycast = RaycastUtil.raycast(this.game.getInstance(), eyePos, shootDir, this.itemInfo.distance(),
-                    (entity) -> entity != shooter && entity instanceof Player player && player.getGameMode() == GameMode.ADVENTURE);
+            RaycastResult raycast = RaycastUtil.raycast(this.game.getSpawningInstance(), eyePos, shootDir, this.itemInfo.distance(),
+                    entity -> entity != shooter && entity instanceof Player player && player.getGameMode() == GameMode.ADVENTURE);
             Point hitPoint = raycast.hitPosition() == null ? eyePos.add(shootDir.mul(this.itemInfo.distance())) : raycast.hitPosition();
 
             if (raycast.hitEntity() != null) { // Hit entity
@@ -71,7 +65,7 @@ public abstract class Gun {
                 // TODO: hit block animation
             }
 
-            ParticleUtil.renderBulletTrail(this.game.getInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
+            ParticleUtil.renderBulletTrail(this.game.getSpawningInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
         }
 
         // Decrease ammo
@@ -82,11 +76,11 @@ public abstract class Gun {
 
         // If ran out of ammo - reload!
         if (ammo == 0) {
-            reload(shooter);
+            this.reload(shooter);
         }
     }
 
-    public void reload(Player player) {
+    public void reload(@NotNull Player player) {
         ItemStack item = player.getItemInMainHand();
         player.setItemInMainHand(item.withMeta(meta -> {
             meta.setTag(RELOADING_TAG, true);
@@ -94,65 +88,58 @@ public abstract class Gun {
         }));
 
         player.playSound(Sound.sound(SoundEvent.BLOCK_ANVIL_LAND, Sound.Source.PLAYER, 0.7f, 2f));
-        reloadTaskMap.put(player.getUuid(), player.scheduler().submitTask(new Supplier<>() {
-            final long startingReloadTicks = itemInfo.reloadTime() / MinecraftServer.TICK_MS;
-            long reloadTicks = startingReloadTicks;
+        player.scheduler().submitTask(new Supplier<>() {
+            final long startingReloadTicks = Gun.this.itemInfo.reloadTime() / MinecraftServer.TICK_MS;
 
+            long reloadTicks = this.startingReloadTicks;
             int lastAmmo = -1;
 //            long currentAmmo = 0;
 
             @Override
             public TaskSchedule get() {
-                reloadTicks--;
+                this.reloadTicks--;
 
-                if (reloadTicks == 0) {
+                if (this.reloadTicks == 0) {
                     // Fully reloaded!
-                    playReloadSound(player);
+                    Gun.this.playReloadSound(player);
 
                     player.setItemInMainHand(item.withMeta(meta -> {
                         meta.removeTag(RELOADING_TAG);
-                        meta.setTag(AMMO_TAG, itemInfo.ammo());
+                        meta.setTag(AMMO_TAG, Gun.this.itemInfo.ammo());
                     }));
-                    renderAmmo(player, 1f, false);
+                    Gun.this.renderAmmo(player, 1f, false);
 
                     return TaskSchedule.stop();
                 }
 
-                float percentage = 1f - (reloadTicks / (float) startingReloadTicks);
-                int ammo = (int) (itemInfo.ammo() * percentage);
-                if (ammo != lastAmmo) {
-                    lastAmmo = ammo;
+                float percentage = 1f - (this.reloadTicks / (float) this.startingReloadTicks);
+                int ammo = (int) (Gun.this.itemInfo.ammo() * percentage);
+
+                if (ammo != this.lastAmmo) {
+                    this.lastAmmo = ammo;
                     player.playSound(Sound.sound(SoundEvent.ENTITY_ITEM_PICKUP, Sound.Source.MASTER, 0.2f, 1f), Sound.Emitter.self());
                 }
 
-                renderAmmo(player, percentage, true);
-
+                Gun.this.renderAmmo(player, percentage, true);
                 return TaskSchedule.tick(1);
             }
-        }));
+        });
     }
 
-    protected void playReloadSound(Player player) {
+    protected void playReloadSound(@NotNull Player player) {
         player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f));
         player.scheduler().buildTask(() -> player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f)))
                 .delay(TaskSchedule.millis(150))
                 .schedule();
     }
 
-    public void renderAmmo(Player player, float percentage, boolean reloading) {
+    public void renderAmmo(@NotNull Player player, float percentage, boolean reloading) {
         TextComponent.Builder component = Component.text();
+        if (reloading) {
+            component.append(RELOADING_COMPONENT);
+        }
 
-        if (reloading) component.append(RELOADING_COMPONENT);
-
-        component.append(
-                createProgressBar(
-                        percentage,
-                        40,
-                        "|",
-                        reloading ? NamedTextColor.RED : NamedTextColor.GOLD,
-                        NamedTextColor.DARK_GRAY
-                )
-        );
+        component.append(createProgressBar(percentage, 40, "|", reloading ? NamedTextColor.RED : NamedTextColor.GOLD, NamedTextColor.DARK_GRAY));
 
         int ammo = (int) (this.itemInfo.ammo() * percentage);
 
@@ -162,25 +149,28 @@ public abstract class Gun {
         player.sendActionBar(component.build());
     }
 
-    public static Vec spread(Vec vec, double amount) {
+    public static @NotNull Vec spread(@NotNull Vec vec, double amount) {
         if (amount == 0.0) return vec;
 
-        var rand = ThreadLocalRandom.current();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         return vec
-                .rotateAroundX(rand.nextDouble(-amount, amount))
-                .rotateAroundY(rand.nextDouble(-amount, amount))
-                .rotateAroundZ(rand.nextDouble(-amount, amount));
+                .rotateAroundX(random.nextDouble(-amount, amount))
+                .rotateAroundY(random.nextDouble(-amount, amount))
+                .rotateAroundZ(random.nextDouble(-amount, amount));
     }
 
-    private static Component createProgressBar(float percentage, int charLength, String character, RGBLike completeColor, RGBLike incompleteColor) {
-        int completeCharacters = (int) Math.ceil(percentage * (float)charLength);
+    private static @NotNull Component createProgressBar(float percentage, int charLength, @NotNull String character, @NotNull RGBLike completeColor,
+                                                        @NotNull RGBLike incompleteColor) {
+        int completeCharacters = (int) Math.ceil(percentage * charLength);
         int incompleteCharacters = charLength - completeCharacters;
 
-        return Component.text(character.repeat(completeCharacters), TextColor.color(completeColor))
-                .append(Component.text(character.repeat(incompleteCharacters), TextColor.color(incompleteColor)));
+        return Component.text()
+                .append(Component.text(character.repeat(completeCharacters), TextColor.color(completeColor)))
+                .append(Component.text(character.repeat(incompleteCharacters), TextColor.color(incompleteColor)))
+                .build();
     }
 
-    public ItemStack createItem() {
+    public @NotNull ItemStack createItem() {
         return ItemStack.builder(this.itemInfo.material())
                 .meta(meta -> {
                     meta.displayName(Component.text(this.name).decoration(TextDecoration.ITALIC, false));
@@ -192,15 +182,11 @@ public abstract class Gun {
                 .build();
     }
 
-    public LazerTagGame getGame() {
-        return game;
+    public @NotNull String getName() {
+        return this.name;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public GunItemInfo getItemInfo() {
-        return itemInfo;
+    public @NotNull GunItemInfo getItemInfo() {
+        return this.itemInfo;
     }
 }

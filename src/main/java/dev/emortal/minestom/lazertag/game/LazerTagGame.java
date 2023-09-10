@@ -1,14 +1,12 @@
 package dev.emortal.minestom.lazertag.game;
 
-import dev.emortal.api.kurushimi.KurushimiMinestomUtils;
-import dev.emortal.minestom.core.Environment;
-import dev.emortal.minestom.gamesdk.GameSdkModule;
+import dev.emortal.minestom.gamesdk.MinestomGameServer;
 import dev.emortal.minestom.gamesdk.config.GameCreationInfo;
 import dev.emortal.minestom.gamesdk.game.Game;
 import dev.emortal.minestom.lazertag.gun.GunManager;
+import dev.emortal.minestom.lazertag.map.LoadedMap;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
@@ -18,129 +16,83 @@ import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.fakeplayer.FakePlayer;
 import net.minestom.server.entity.fakeplayer.FakePlayerOption;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
-import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerLoginEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.UUID;
 
 public final class LazerTagGame extends Game {
-
     private static final Pos WAITING_SPAWN_POINT = new Pos(0, 64, 0);
-    private static final Logger LOGGER = LoggerFactory.getLogger(LazerTagGame.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-    public static final int MINIMUM_PLAYERS = 2;
 
     public static final int KILLS_TO_WIN = 20;
 
+    private final @NotNull LoadedMap map;
+    private final @NotNull GunManager gunManager;
+    private final @NotNull DamageHandler damageHandler;
+    private final @NotNull ScoreboardHandler scoreboardHandler;
 
-
-
-    private final Instance instance;
-    private final GameCreationInfo creationInfo;
-    private final GunManager gunManager;
-    private final DamageHandler damageHandler;
-    private final TagHandler tagHandler;
-    private final ScoreboardHandler scoreboardHandler;
-    public LazerTagGame(final @NotNull GameCreationInfo creationInfo, @NotNull EventNode<Event> gameEventNode, @NotNull Instance instance) {
-        super(creationInfo, gameEventNode);
-
-        this.creationInfo = creationInfo;
-
-        instance.setTimeRate(0);
-        instance.setTimeUpdate(null);
-        this.instance = instance;
-
-        gameEventNode.addListener(PlayerDisconnectEvent.class, event -> {
-            if (this.getPlayers().remove(event.getPlayer())) {
-                if (this.getPlayers().size() <= 1) {
-                    victory();
-                }
-            }
-        });
+    public LazerTagGame(@NotNull GameCreationInfo creationInfo, @NotNull LoadedMap map) {
+        super(creationInfo);
+        this.map = map;
 
         this.gunManager = new GunManager(this);
-        this.damageHandler = new DamageHandler(this);
-        this.tagHandler = new TagHandler();
+        this.damageHandler = new DamageHandler(this, this.map);
         this.scoreboardHandler = new ScoreboardHandler(this);
     }
 
-    public Instance getInstance() {
-        return instance;
-    }
-
-    public GameCreationInfo getCreationInfo() {
-        return creationInfo;
-    }
-    public DamageHandler getDamageHandler() {
-        return damageHandler;
-    }
-    public GunManager getGunManager() {
-        return gunManager;
-    }
-    public TagHandler getTagHandler() {
-        return tagHandler;
-    }
-    public ScoreboardHandler getScoreboardHandler() {
-        return scoreboardHandler;
-    }
-
     @Override
-    public void onPlayerLogin(@NotNull PlayerLoginEvent event) {
-        Player player = event.getPlayer();
-        if (!getGameCreationInfo().playerIds().contains(player.getUuid())) {
-            player.kick("Unexpected join (" + Environment.getHostname() + ")");
-            LOGGER.info("Unexpected join for player {}", player.getUuid());
-            return;
-        }
-
-        player.setRespawnPoint(WAITING_SPAWN_POINT);
-        event.setSpawningInstance(this.instance);
-        this.players.add(player);
-
+    public void onJoin(@NotNull Player player) {
         player.setFlying(false);
         player.setAllowFlying(false);
         player.setAutoViewable(true);
         player.setTeam(null);
         player.setGlowing(false);
         player.setGameMode(GameMode.ADVENTURE);
+
+        player.setRespawnPoint(WAITING_SPAWN_POINT);
+    }
+
+    @Override
+    public void onLeave(@NotNull Player player) {
+        player.setTeam(null);
+        player.clearEffects();
+        TagHandler.removePlayerTags(player);
+
+        if (this.getPlayers().size() <= 1) {
+            this.victory();
+        }
     }
 
     @Override
     public void start() {
-        for (Player player : players) {
-            tagHandler.initializePlayerTags(player);
+        for (Player player : this.getPlayers()) {
+            TagHandler.initializePlayerTags(player);
             player.setHeldItemSlot((byte) 4);
-            damageHandler.respawn(player);
-            scoreboardHandler.showSidebar(player);
+            this.damageHandler.respawn(player);
+            this.scoreboardHandler.show(player);
         }
 
-        if (GameSdkModule.TEST_MODE) {
-            FakePlayer.initPlayer(UUID.randomUUID(), "lazertagbot", new FakePlayerOption().setInTabList(true), fp -> {
-                fp.setHeldItemSlot((byte) 4);
-                fp.setVelocity(new Vec(2, 20, 0));
-                damageHandler.respawn(fp);
-                fp.setCustomSynchronizationCooldown(Duration.ofSeconds(3));
+        if (MinestomGameServer.TEST_MODE) {
+            FakePlayer.initPlayer(UUID.randomUUID(), "lazertagbot", new FakePlayerOption().setInTabList(true), player -> {
+                player.setHeldItemSlot((byte) 4);
+                player.setVelocity(new Vec(2, 20, 0));
+                this.damageHandler.respawn(player);
+                player.setCustomSynchronizationCooldown(Duration.ofSeconds(3));
             });
         }
 
-        var eventNode = instance.eventNode();
-        gunManager.registerListeners(eventNode);
-        damageHandler.registerListeners(eventNode);
+        this.gunManager.registerListeners();
+        this.damageHandler.registerListeners();
     }
 
-
     @Override
-    public void cancel() {
-
+    public @NotNull Instance getSpawningInstance() {
+        return this.map.instance();
     }
 
     public void victory() {
@@ -161,18 +113,9 @@ public final class LazerTagGame extends Game {
         Sound victorySound = Sound.sound(SoundEvent.BLOCK_BEACON_POWER_SELECT, Sound.Source.MASTER, 1f, 0.8f);
 
         // Choose the player with the highest kills
-        int killsRecord = 0;
-        Player highestKiller = null;
-        for (Player player : players) {
-            Integer playerKills = player.getTag(DamageHandler.KILLS_TAG);
-            if (playerKills == null) playerKills = 0;
-            if (playerKills > killsRecord) {
-                killsRecord = playerKills;
-                highestKiller = player;
-            }
-        }
+        Player highestKiller = this.findPlayerWithHighestKills();
 
-        for (Player player : players) {
+        for (Player player : this.getPlayers()) {
             if (highestKiller == player) {
                 player.showTitle(victoryTitle);
                 player.playSound(victorySound, Sound.Emitter.self());
@@ -182,29 +125,41 @@ public final class LazerTagGame extends Game {
             }
         }
 
-        instance.scheduler().buildTask(this::sendBackToLobby)
+        this.map.instance().scheduler().buildTask(this::finish)
                 .delay(TaskSchedule.seconds(6))
                 .schedule();
     }
 
-    private void sendBackToLobby() {
-        for (final Player player : players) {
-            player.setTeam(null);
-            player.clearEffects();
-            tagHandler.removePlayerTags(player);
+    private @Nullable Player findPlayerWithHighestKills() {
+        int killsRecord = 0;
+        Player highestKiller = null;
+
+        for (Player player : this.getPlayers()) {
+            Integer playerKills = player.getTag(DamageHandler.KILLS_TAG);
+            if (playerKills == null) playerKills = 0;
+            if (playerKills > killsRecord) {
+                killsRecord = playerKills;
+                highestKiller = player;
+            }
         }
-        KurushimiMinestomUtils.sendToLobby(players, this::removeGame, this::removeGame);
+
+        return highestKiller;
     }
 
-    private void removeGame() {
-        GameSdkModule.getGameManager().removeGame(this);
-        cleanUp();
+    @Override
+    public void cleanUp() {
+        this.map.instance().scheduleNextTick(MinecraftServer.getInstanceManager()::unregisterInstance);
     }
 
-    private void cleanUp() {
-        for (final Player player : this.players) {
-            player.kick(Component.text("The game ended but we weren't able to connect you to a lobby. Please reconnect", NamedTextColor.RED));
-        }
-        MinecraftServer.getInstanceManager().unregisterInstance(this.instance);
+    public @NotNull DamageHandler getDamageHandler() {
+        return this.damageHandler;
+    }
+
+    public @NotNull GunManager getGunManager() {
+        return this.gunManager;
+    }
+
+    public @NotNull ScoreboardHandler getScoreboardHandler() {
+        return this.scoreboardHandler;
     }
 }

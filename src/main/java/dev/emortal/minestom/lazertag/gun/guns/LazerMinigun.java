@@ -7,9 +7,11 @@ import dev.emortal.minestom.lazertag.gun.ItemRarity;
 import net.kyori.adventure.sound.Sound;
 import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
+import org.jetbrains.annotations.NotNull;
 
-public class LazerMinigun extends Gun {
-    public LazerMinigun(LazerTagGame game) {
+public final class LazerMinigun extends Gun {
+
+    public LazerMinigun(@NotNull LazerTagGame game) {
         super(
                 game,
                 "Lazer Minigun",

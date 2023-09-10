@@ -19,14 +19,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Predicate;
 
-public class RaycastUtil {
-
-    private static final Map<BoundingBox, Area3d> boundingBoxToArea3dMap = new HashMap<>();
+public final class RaycastUtil {
     private static final double TOLERANCE = 0.0;
 
+    private static final Map<BoundingBox, Area3d> boundingBoxToArea3dMap = new HashMap<>();
+
     public static void init() {
-        Area3d.CONVERTER.register(BoundingBox.class, (box) -> {
-            boundingBoxToArea3dMap.computeIfAbsent(box, (bb) -> Area3dRectangularPrism.of(
+        Area3d.CONVERTER.register(BoundingBox.class, box -> {
+            boundingBoxToArea3dMap.computeIfAbsent(box, bb -> Area3dRectangularPrism.of(
                     bb.minX() - TOLERANCE, bb.minY() - TOLERANCE, bb.minZ() - TOLERANCE,
                     bb.maxX() + TOLERANCE, bb.maxY() + TOLERANCE, bb.maxZ() + TOLERANCE
             ));
@@ -35,18 +35,18 @@ public class RaycastUtil {
         });
     }
 
-    public static boolean hasLineOfSight(Entity a, Entity b) {
+    public static boolean hasLineOfSight(@NotNull Entity a, @NotNull Entity b) {
         return hasLineOfSight(a.getInstance(), a.getPosition().add(0, a.getEyeHeight(), 0), b.getPosition().add(0, b.getEyeHeight(), 0));
     }
 
-    public static boolean hasLineOfSight(Instance instance, Point startPoint, Point endPoint) {
+    public static boolean hasLineOfSight(@NotNull Instance instance, @NotNull Point startPoint, @NotNull Point endPoint) {
         Vec direction = Vec.fromPoint(endPoint.sub(startPoint)).normalize();
         double maxDistance = startPoint.distance(endPoint);
 
         return raycastBlock(instance, startPoint, direction, maxDistance) == null;
     }
 
-    public static @Nullable Point raycastBlock(Instance instance, Point startPoint, Point direction, double maxDistance) {
+    public static @Nullable Point raycastBlock(@NotNull Instance instance, @NotNull Point startPoint, @NotNull Point direction, double maxDistance) {
         Iterator<Vector3d> gridIter = GridCast.createExactGridIterator(
                 startPoint.x(), startPoint.y(), startPoint.z(),
                 direction.x(), direction.y(), direction.z(),
@@ -72,7 +72,8 @@ public class RaycastUtil {
         return null;
     }
 
-    public static @NotNull RaycastResult raycastEntity(Instance instance, Point startPoint, Point direction, double maxDistance, Predicate<Entity> hitFilter) {
+    public static @NotNull RaycastResult raycastEntity(@NotNull Instance instance, @NotNull Point startPoint, @NotNull Point direction,
+                                                       double maxDistance, @NotNull Predicate<Entity> hitFilter) {
         for (Entity entity : instance.getEntities()) {
             if (!hitFilter.test(entity)) continue;
             if (entity.getPosition().distanceSquared(startPoint) > maxDistance * maxDistance) continue;
@@ -92,7 +93,8 @@ public class RaycastUtil {
         return RaycastResult.HIT_NOTHING;
     }
 
-    public static RaycastResult raycast(Instance instance, Point startPoint, Point direction, double maxDistance, Predicate<Entity> hitFilter) {
+    public static @NotNull RaycastResult raycast(@NotNull Instance instance, @NotNull Point startPoint, @NotNull Point direction, double maxDistance,
+                                                 @NotNull Predicate<Entity> hitFilter) {
         Point blockRaycast = raycastBlock(instance, startPoint, direction, maxDistance);
         RaycastResult entityRaycast = raycastEntity(instance, startPoint, direction, maxDistance, hitFilter);
 
@@ -120,5 +122,8 @@ public class RaycastUtil {
         } else {
             return new RaycastResult(null, blockRaycast);
         }
+    }
+
+    private RaycastUtil() {
     }
 }

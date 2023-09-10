@@ -10,9 +10,11 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
+import org.jetbrains.annotations.NotNull;
 
-public class Shotgun extends Gun {
-    public Shotgun(LazerTagGame game) {
+public final class Shotgun extends Gun {
+
+    public Shotgun(@NotNull LazerTagGame game) {
         super(
                 game,
                 "Shotgun",
@@ -38,9 +40,10 @@ public class Shotgun extends Gun {
     }
 
     @Override
-    public void shoot(Player shooter) {
+    public void shoot(@NotNull Player shooter) {
         super.shoot(shooter);
-        shooter.scheduler().buildTask(() -> playReloadSound(shooter)).delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS)).schedule();
-        shooter.setVelocity(shooter.getPosition().direction().mul(-15)); // TODO: Make sure this is TPS independant
+        shooter.scheduler().buildTask(() -> this.playReloadSound(shooter)).delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS)).schedule();
+        // TODO: Make sure this is TPS independant
+        shooter.setVelocity(shooter.getPosition().direction().mul(-15));
     }
 }

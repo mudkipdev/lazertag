@@ -4,18 +4,19 @@ import dev.emortal.minestom.lazertag.game.LazerTagGame;
 import dev.emortal.minestom.lazertag.gun.Gun;
 import dev.emortal.minestom.lazertag.gun.GunItemInfo;
 import dev.emortal.minestom.lazertag.gun.ItemRarity;
-import dev.emortal.minestom.lazertag.util.entity.BetterEntity;
 import dev.emortal.minestom.lazertag.util.entity.BetterEntityProjectile;
 import net.kyori.adventure.sound.Sound;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
 
-public class BeeBlaster extends Gun {
-    public BeeBlaster(LazerTagGame game) {
+public final class BeeBlaster extends Gun {
+
+    public BeeBlaster(@NotNull LazerTagGame game) {
         super(
                 game,
                 "Bee Blaster",
@@ -41,17 +42,14 @@ public class BeeBlaster extends Gun {
     }
 
     @Override
-    public void shoot(Player shooter) {
-        BetterEntityProjectile entity = new BetterEntityProjectile(shooter, EntityType.BEE, () -> {
-            // TODO: Some stuff here
-        });
+    public void shoot(@NotNull Player shooter) {
+        BetterEntityProjectile entity = new BetterEntityProjectile(shooter, EntityType.BEE);
         entity.setDrag(false);
         entity.setGravityDrag(false);
         entity.setNoGravity(true);
         entity.setVelocity(shooter.getPosition().direction().mul(25));
 
         entity.scheduleRemove(Duration.ofSeconds(5));
-
-        entity.setInstance(game.getInstance(), shooter.getPosition().add(0, shooter.getEyeHeight(), 0));
+        entity.setInstance(this.game.getSpawningInstance(), shooter.getPosition().add(0, shooter.getEyeHeight(), 0));
     }
 }
