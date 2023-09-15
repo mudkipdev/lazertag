@@ -13,36 +13,36 @@ import net.minestom.server.timer.TaskSchedule;
 import org.jetbrains.annotations.NotNull;
 
 public final class Shotgun extends Gun {
+    private static final GunItemInfo INFO = new GunItemInfo(
+            Material.REPEATER,
+            ItemRarity.RARE,
+
+            1.25f,
+            25.0,
+            1,
+            6,
+
+            3300,
+            400,
+            0,
+            0.13,
+            20,
+
+            Sound.sound(SoundEvent.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, Sound.Source.PLAYER, 2f, 1f)
+    );
 
     public Shotgun(@NotNull LazerTagGame game) {
-        super(
-                game,
-                "Shotgun",
-
-                new GunItemInfo(
-                        Material.REPEATER,
-                        ItemRarity.RARE,
-
-                        1.25f,
-                        25.0,
-                        1,
-                        6,
-
-                        3300,
-                        400,
-                        0,
-                        0.13,
-                        20,
-
-                        Sound.sound(SoundEvent.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, Sound.Source.PLAYER, 2f, 1f)
-                )
-        );
+        super(game, "Shotgun", INFO);
     }
 
     @Override
     public void shoot(@NotNull Player shooter) {
         super.shoot(shooter);
-        shooter.scheduler().buildTask(() -> this.playReloadSound(shooter)).delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS)).schedule();
+        shooter.scheduler()
+                .buildTask(() -> this.playReloadSound(shooter))
+                .delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS))
+                .schedule();
+
         // TODO: Make sure this is TPS independant
         shooter.setVelocity(shooter.getPosition().direction().mul(-15));
     }

@@ -63,7 +63,7 @@ public final class RaycastUtil {
                 if (hitBlock.isSolid()) {
                     return pos;
                 }
-            } catch (NullPointerException e) {
+            } catch (NullPointerException ignored) {
                 // catches unloaded chunk errors
                 break;
             }

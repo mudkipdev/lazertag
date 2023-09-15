@@ -15,30 +15,26 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Duration;
 
 public final class BeeBlaster extends Gun {
+    private static final GunItemInfo INFO = new GunItemInfo(
+            Material.HONEYCOMB,
+            ItemRarity.LEGENDARY,
+
+            70f,
+            0,
+            0,
+            1,
+
+            2000,
+            2000,
+            0,
+            0,
+            1,
+
+            Sound.sound(SoundEvent.ENTITY_BLAZE_HURT, Sound.Source.PLAYER, 1.3f, 1.1f)
+    );
 
     public BeeBlaster(@NotNull LazerTagGame game) {
-        super(
-                game,
-                "Bee Blaster",
-
-                new GunItemInfo(
-                        Material.HONEYCOMB,
-                        ItemRarity.LEGENDARY,
-
-                        70f,
-                        0,
-                        0,
-                        1,
-
-                        2000,
-                        2000,
-                        0,
-                        0,
-                        1,
-
-                        Sound.sound(SoundEvent.ENTITY_BLAZE_HURT, Sound.Source.PLAYER, 1.3f, 1.1f)
-                )
-        );
+        super(game, "Bee Blaster", INFO);
     }
 
     @Override

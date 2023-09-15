@@ -41,11 +41,11 @@ public final class DamageHandler {
             Component.empty(),
             Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofSeconds(1))
     );
-    public static final Tag<Long> SPAWN_PROT_TAG = Tag.Long("spawnProt");
 
-    public static final Tag<Integer> COMBO_TAG = Tag.Integer("combo");
-    public static final Tag<Integer> KILLS_TAG = Tag.Integer("kills");
-    public static final Tag<Integer> DEATHS_TAG = Tag.Integer("deaths");
+    public static final @NotNull Tag<Long> SPAWN_PROT_TAG = Tag.Long("spawnProt");
+    public static final @NotNull Tag<Integer> COMBO_TAG = Tag.Integer("combo");
+    public static final @NotNull Tag<Integer> KILLS_TAG = Tag.Integer("kills");
+    public static final @NotNull Tag<Integer> DEATHS_TAG = Tag.Integer("deaths");
 
     private static final DecimalFormat HEALTH_FORMAT = new DecimalFormat("0.##");
 
@@ -147,10 +147,7 @@ public final class DamageHandler {
     public void kill(Player player) {
         if (player.getGameMode() != GameMode.ADVENTURE) return; // Already dead
 
-        if (
-                player.getLastDamageSource() instanceof EntityDamage entityDamage
-                && entityDamage.getSource() instanceof Player killer
-        ) {
+        if (player.getLastDamageSource() instanceof EntityDamage damage && damage.getSource() instanceof Player killer) {
             this.game.sendMessage(getDeathMessage(player, killer));
 
             killer.showTitle(Title.title(
@@ -217,10 +214,7 @@ public final class DamageHandler {
             public TaskSchedule get() {
                 this.secondsLeft--;
 
-                player.playSound(
-                        Sound.sound(SoundEvent.BLOCK_WOODEN_BUTTON_CLICK_ON, Sound.Source.BLOCK, 1f, 1f),
-                        Sound.Emitter.self()
-                );
+                player.playSound(Sound.sound(SoundEvent.BLOCK_WOODEN_BUTTON_CLICK_ON, Sound.Source.BLOCK, 1f, 1f), Sound.Emitter.self());
                 player.showTitle(Title.title(
                         Component.text(this.secondsLeft, NamedTextColor.GOLD, TextDecoration.BOLD),
                         Component.empty(),
@@ -242,14 +236,11 @@ public final class DamageHandler {
     }
 
     private void reset(@NotNull Player player) {
-        player.playSound(
-                Sound.sound(SoundEvent.BLOCK_BEACON_ACTIVATE, Sound.Source.MASTER, 1f, 2f),
-                Sound.Emitter.self()
-        );
-
+        player.playSound(Sound.sound(SoundEvent.BLOCK_BEACON_ACTIVATE, Sound.Source.MASTER, 1f, 2f), Sound.Emitter.self());
         player.setAutoViewable(true);
         player.setGameMode(GameMode.ADVENTURE);
         player.clearTitle();
+
         this.giveRandomGun(player);
     }
 
@@ -267,14 +258,15 @@ public final class DamageHandler {
         return player.getHealth() <= damage;
     }
 
-    public void setSpawnProtection(@NotNull Player player, long millis) {
+    private void setSpawnProtection(@NotNull Player player, long millis) {
         if (millis == 0) {
             player.removeTag(SPAWN_PROT_TAG);
             return;
         }
         player.setTag(SPAWN_PROT_TAG, System.currentTimeMillis() + millis);
     }
-    public boolean hasSpawnProtection(@NotNull Player player) {
+
+    private boolean hasSpawnProtection(@NotNull Player player) {
         Long spawnProtectionMillis = player.getTag(SPAWN_PROT_TAG);
         if (spawnProtectionMillis == null) return false;
 

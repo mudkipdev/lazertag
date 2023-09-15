@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "dev.emortal.minestom"
@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.emortal.minestom:game-sdk:bf1bede")
+    implementation("dev.emortal.minestom:game-sdk:abecd78")
 
     implementation("net.kyori:adventure-text-minimessage:4.12.0")
     implementation("dev.hollowcube:polar:1.2.0")

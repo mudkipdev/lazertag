@@ -15,8 +15,7 @@ import java.util.function.Consumer;
 public final class ScoreboardHandler {
     private static final Comparator<Player> PLAYER_COMPARATOR = Comparator.comparingInt(player -> {
         Integer kills = player.getTag(DamageHandler.KILLS_TAG);
-        if (kills == null) return 0;
-        return kills;
+        return kills == null ? 0 : kills;
     });
 
     private final @NotNull LazerTagGame game;
@@ -43,9 +42,7 @@ public final class ScoreboardHandler {
     }
 
     public void refreshScoreboard() {
-        this.game.getPlayers().stream()
-                .sorted(PLAYER_COMPARATOR)
-                .forEachOrdered(new RefreshAction());
+        this.game.getPlayers().stream().sorted(PLAYER_COMPARATOR).forEachOrdered(new RefreshAction());
     }
 
     private final class RefreshAction implements Consumer<Player> {

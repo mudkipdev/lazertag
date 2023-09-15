@@ -40,7 +40,7 @@ public final class GunRegistry {
         int index = 0;
         int randomIndex = ThreadLocalRandom.current().nextInt(totalWeight + 1);
         while (index < this.guns.size() - 1) {
-            randomIndex -= guns.get(index).getItemInfo().rarity().getWeight();
+            randomIndex -= this.guns.get(index).getItemInfo().rarity().getWeight();
             if (randomIndex <= 0) break;
             index++;
         }

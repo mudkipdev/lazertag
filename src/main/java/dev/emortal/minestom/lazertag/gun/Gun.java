@@ -29,10 +29,10 @@ import java.util.function.Supplier;
 public abstract class Gun {
     private static final Component RELOADING_COMPONENT = Component.text("RELOADING ", NamedTextColor.RED);
 
-    public static final Tag<String> NAME_TAG = Tag.String("name");
-    public static final Tag<Integer> AMMO_TAG = Tag.Integer("ammo");
-    public static final Tag<Boolean> RELOADING_TAG = Tag.Boolean("reloading");
-    public static final Tag<Long> COOLDOWN_TAG = Tag.Long("cooldown");
+    public static final @NotNull Tag<String> NAME_TAG = Tag.String("name");
+    public static final @NotNull Tag<Integer> AMMO_TAG = Tag.Integer("ammo");
+    public static final @NotNull Tag<Boolean> RELOADING_TAG = Tag.Boolean("reloading");
+    public static final @NotNull Tag<Long> COOLDOWN_TAG = Tag.Long("cooldown");
 
     protected final @NotNull LazerTagGame game;
     protected final @NotNull String name;
@@ -128,7 +128,8 @@ public abstract class Gun {
 
     protected void playReloadSound(@NotNull Player player) {
         player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f));
-        player.scheduler().buildTask(() -> player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f)))
+        player.scheduler()
+                .buildTask(() -> player.playSound(Sound.sound(SoundEvent.ENTITY_IRON_GOLEM_ATTACK, Sound.Source.PLAYER, 1f, 1f)))
                 .delay(TaskSchedule.millis(150))
                 .schedule();
     }

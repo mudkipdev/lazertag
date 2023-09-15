@@ -10,29 +10,25 @@ import net.minestom.server.sound.SoundEvent;
 import org.jetbrains.annotations.NotNull;
 
 public final class LazerMinigun extends Gun {
+    private static final GunItemInfo INFO = new GunItemInfo(
+            Material.NETHERITE_SHOVEL,
+            ItemRarity.RARE,
+
+            0.75f,
+            50.0,
+            3,
+            70,
+
+            3500,
+            100,
+            50,
+            0,
+            1,
+
+            Sound.sound(SoundEvent.BLOCK_BEACON_DEACTIVATE, Sound.Source.PLAYER, 2f, 2f)
+    );
 
     public LazerMinigun(@NotNull LazerTagGame game) {
-        super(
-                game,
-                "Lazer Minigun",
-
-                new GunItemInfo(
-                        Material.NETHERITE_SHOVEL,
-                        ItemRarity.RARE,
-
-                        0.75f,
-                        50.0,
-                        3,
-                        70,
-
-                        3500,
-                        100,
-                        50,
-                        0,
-                        1,
-
-                        Sound.sound(SoundEvent.BLOCK_BEACON_DEACTIVATE, Sound.Source.PLAYER, 2f, 2f)
-                )
-        );
+        super(game, "Lazer Minigun", INFO);
     }
 }

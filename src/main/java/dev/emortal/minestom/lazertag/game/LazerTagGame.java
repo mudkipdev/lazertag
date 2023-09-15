@@ -78,16 +78,20 @@ public final class LazerTagGame extends Game {
         }
 
         if (MinestomGameServer.TEST_MODE) {
-            FakePlayer.initPlayer(UUID.randomUUID(), "lazertagbot", new FakePlayerOption().setInTabList(true), player -> {
-                player.setHeldItemSlot((byte) 4);
-                player.setVelocity(new Vec(2, 20, 0));
-                this.damageHandler.respawn(player);
-                player.setCustomSynchronizationCooldown(Duration.ofSeconds(3));
-            });
+            this.spawnDummyBot();
         }
 
         this.gunManager.registerListeners();
         this.damageHandler.registerListeners();
+    }
+
+    private void spawnDummyBot() {
+        FakePlayer.initPlayer(UUID.randomUUID(), "lazertagbot", new FakePlayerOption().setInTabList(true), player -> {
+            player.setHeldItemSlot((byte) 4);
+            player.setVelocity(new Vec(2, 20, 0));
+            this.damageHandler.respawn(player);
+            player.setCustomSynchronizationCooldown(Duration.ofSeconds(3));
+        });
     }
 
     @Override
