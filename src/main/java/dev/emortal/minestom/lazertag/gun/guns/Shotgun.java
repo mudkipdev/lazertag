@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 public final class Shotgun extends Gun {
     private static final GunItemInfo INFO = new GunItemInfo(
             Material.REPEATER,
-            ItemRarity.RARE,
+            ItemRarity.LEGENDARY,
 
             1.25f,
             25.0,
@@ -36,11 +36,12 @@ public final class Shotgun extends Gun {
     }
 
     @Override
-    public void shoot(@NotNull Player shooter) {
-        super.shoot(shooter);
+    public void shoot(@NotNull Player shooter, int ammo) {
+        super.shoot(shooter, ammo);
+
         shooter.scheduler()
                 .buildTask(() -> this.playReloadSound(shooter))
-                .delay(TaskSchedule.tick(200 / MinecraftServer.TICK_MS))
+                .delay(TaskSchedule.tick(MinecraftServer.TICK_MS / 2))
                 .schedule();
 
         // TODO: Make sure this is TPS independant

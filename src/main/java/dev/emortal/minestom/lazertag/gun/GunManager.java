@@ -100,7 +100,11 @@ public final class GunManager {
 
             @Override
             public TaskSchedule get() {
-                heldGun.shoot(player);
+                int ammo = player.getItemInMainHand().meta().getTag(Gun.AMMO_TAG) - 1;
+                if (ammo < 0) return TaskSchedule.stop();
+
+                heldGun.shoot(player, ammo);
+                heldGun.afterShoot(player, ammo);
                 event.getInstance().playSound(heldGun.getItemInfo().sound(), player.getPosition());
 
                 this.i++;

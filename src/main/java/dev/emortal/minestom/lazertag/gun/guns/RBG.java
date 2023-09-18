@@ -1,6 +1,5 @@
 package dev.emortal.minestom.lazertag.gun.guns;
 
-import dev.emortal.minestom.lazertag.game.DamageHandler;
 import dev.emortal.minestom.lazertag.game.LazerTagGame;
 import dev.emortal.minestom.lazertag.gun.Gun;
 import dev.emortal.minestom.lazertag.gun.GunItemInfo;
@@ -17,31 +16,30 @@ import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.ExplosionPacket;
 import net.minestom.server.sound.SoundEvent;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 
-public final class BeeBlaster extends Gun {
+public final class RBG extends Gun {
     private static final GunItemInfo INFO = new GunItemInfo(
             Material.HONEYCOMB,
-            ItemRarity.LEGENDARY,
+            ItemRarity.IMPOSSIBLE,
 
-            70f,
+            9999f,
             0,
+            3,
+            999,
+
+            0,
+            0,
+            50,
             0,
             1,
 
-            2000,
-            2000,
-            0,
-            0,
-            1,
-
-            Sound.sound(SoundEvent.ENTITY_BEE_HURT, Sound.Source.PLAYER, 1.3f, 1.1f)
+            Sound.sound(SoundEvent.ENTITY_BLAZE_HURT, Sound.Source.PLAYER, 1.3f, 1.1f)
     );
 
-    public BeeBlaster(@NotNull LazerTagGame game) {
-        super(game, "Bee Blaster", INFO);
+    public RBG(@NotNull LazerTagGame game) {
+        super(game, "RBG", INFO);
     }
 
     @Override
@@ -67,39 +65,29 @@ public final class BeeBlaster extends Gun {
         }
 
         @Override
-        public void collideBlock(@NotNull Point pos) {
-            this.collide(null);
+        public void collideBlock(Point pos) {
+            this.collide();
         }
 
         @Override
-        public void collidePlayer(@NotNull Point pos, @NotNull Player player) {
-            this.collide(player);
+        public void collidePlayer(Point pos, Player player) {
+            this.collide();
         }
 
-        private void collide(@Nullable Player collidedPlayer) {
-            DamageHandler damageHandler = BeeBlaster.this.game.getDamageHandler();
-
+        private void collide() {
             Pos pos = this.getPosition();
             ServerPacket explosionPacket = new ExplosionPacket(pos.x(), pos.y(), pos.z(), 2f, new byte[0], 0f, 0f, 0);
+
             this.sendPacketToViewers(explosionPacket);
 
-            if (collidedPlayer != null) {
-                damageHandler.damage(collidedPlayer, this.shooter, this.getPosition(), 20f);
-            }
-
-            for (Player victim : BeeBlaster.this.game.getPlayers()) {
+            for (Player victim : RBG.this.game.getSpawningInstance().getPlayers()) {
+                if (victim == this.shooter) continue;
                 if (victim.isInvulnerable()) continue;
                 if (victim.getDistanceSquared(this) > 5 * 5) continue;
 
-                if (victim != this.shooter && victim.getDistanceSquared(this) < 1.7 * 1.7) {
-                    damageHandler.damage(victim, this.shooter, this.getPosition(), 20f);
-                    continue;
-                }
+                RBG.this.game.getDamageHandler().damage(victim, this.shooter, this.getPosition(), 20f);
 
-                float damage = victim == this.shooter ? 5f : INFO.damage() / ((float) victim.getDistance(this) * 2.5f);
-                damageHandler.damage(victim, this.shooter, this.getPosition(), damage);
-
-                victim.setVelocity(Vec.fromPoint(victim.getPosition().sub(this.getPosition().sub(0, 0.5, 0))).normalize().mul(50));
+                victim.setVelocity(Vec.fromPoint(victim.getPosition().sub(this.getPosition().sub(0, 0.5, 0))).normalize().mul(60));
             }
 
             this.remove();

@@ -1,5 +1,6 @@
 package dev.emortal.minestom.lazertag.game;
 
+import dev.emortal.minestom.lazertag.gun.Gun;
 import dev.emortal.minestom.lazertag.map.LoadedMap;
 import dev.emortal.minestom.lazertag.util.entity.BetterEntity;
 import net.kyori.adventure.sound.Sound;
@@ -27,11 +28,13 @@ import net.minestom.server.timer.TaskSchedule;
 import net.minestom.server.utils.MathUtils;
 import net.minestom.server.utils.position.PositionUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
@@ -56,6 +59,7 @@ public final class DamageHandler {
 
     private boolean firstKill = true;
     private int killLeader = 0;
+    private @Nullable UUID killLeaderUUID = null;
 
     public DamageHandler(@NotNull LazerTagGame game, @NotNull LoadedMap map) {
         this.game = game;
@@ -73,23 +77,25 @@ public final class DamageHandler {
     }
 
     public void damage(@NotNull Player target, @NotNull Player damager, @NotNull Pos sourcePos, float damage) {
+        damage = Math.min(20, damage);
+
         if (target.getGameMode() != GameMode.ADVENTURE) return;
 
         this.setSpawnProtection(damager, 0L);
         if (this.hasSpawnProtection(target)) return;
 
-        if (this.wouldDie(target, damage)) {
-            this.kill(target);
-            return;
-        }
-
         Vec direction = Vec.fromPoint(sourcePos.sub(target.getPosition())).normalize();
         float yaw = PositionUtils.getLookYaw(direction.x(), direction.z());
 
 //        game.getInstance().sendGroupedPacket(new DamageEventPacket(target.getEntityId(), 0, damager.getEntityId(), damager.getEntityId(), sourcePos));
-        this.game.sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw + 90));
+        this.game.sendGroupedPacket(new HitAnimationPacket(target.getEntityId(), yaw));
 
         this.spawnDamageIndicator(target.getPosition(), damage);
+
+        if (this.wouldDie(target, damage)) {
+            this.kill(target);
+            return;
+        }
 
         target.damage(DamageType.fromPlayer(damager), damage);
     }
@@ -99,7 +105,7 @@ public final class DamageHandler {
         entity.setDrag(false);
         entity.setGravityDrag(false);
 
-        float healthPercentage = damage / 20f;
+        float healthPercentage = Math.min(1F, Math.max(0F, damage / 20F));
         TextColor color = TextColor.lerp(healthPercentage, NamedTextColor.DARK_RED, NamedTextColor.GOLD);
         TextColor lighterColor = TextColor.color(
                 MathUtils.clamp(color.red() + 100, 0, 255),
@@ -121,14 +127,20 @@ public final class DamageHandler {
 
         // Animated rainbow effect
         if (damage > 18) {
-            Runnable task = () -> meta.setText(MINI_MESSAGE.deserialize("<rainbow:" + entity.getAliveTicks() + ">❤ " + HEALTH_FORMAT.format(damage)));
-            entity.scheduler().buildTask(task).repeat(TaskSchedule.tick(3)).schedule();
+            entity.scheduler()
+                    .buildTask(() -> meta.setText(MINI_MESSAGE.deserialize("<rainbow:" + entity.getAliveTicks() / 2 + ">❤ " + HEALTH_FORMAT.format(damage))))
+                    .repeat(TaskSchedule.tick(2))
+                    .schedule();
         }
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        // TODO: Make sure this is TPS independent
-        entity.setVelocity(new Vec(random.nextDouble(-1, 1), random.nextDouble(4, 5), random.nextDouble(-1, 1)).mul(2));
+        Vec newVelocity = new Vec(
+                random.nextDouble(-1, 1),
+                random.nextDouble(4 + healthPercentage * 1, 5 + healthPercentage * 1),
+                random.nextDouble(-1, 1)
+        );
+        entity.setVelocity(newVelocity.mul(2)); // TODO: Make sure this is TPS independant
 
 //        Pos newPos = playerPos.add(random.nextDouble(-1.5, 1.5), random.nextDouble(1.7, 2.2), random.nextDouble(-1.5, 1.5));
         Pos newPos = playerPos.add(0, 1.7, 0);
@@ -175,8 +187,10 @@ public final class DamageHandler {
             killer.playSound(Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 2f, 1f + (combo * 0.1f)), Sound.Emitter.self());
             int kills = this.incrementKills(killer);
 
-            if (kills > this.killLeader) {
+            if (kills > this.killLeader && !killer.getUuid().equals(this.killLeaderUUID)) {
                 this.killLeader = kills;
+                this.killLeaderUUID = killer.getUuid();
+
                 this.game.sendMessage(Component.text()
                         .append(Component.text("☠", NamedTextColor.GOLD))
                         .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
@@ -191,13 +205,26 @@ public final class DamageHandler {
         }
 
         if (player instanceof FakePlayer) { // For testing!
+            Pos before = player.getPosition();
+            player.setInvulnerable(true);
             player.setGameMode(GameMode.SPECTATOR);
-            player.scheduler().buildTask(() -> player.setGameMode(GameMode.ADVENTURE)).delay(TaskSchedule.tick(5)).schedule();
+
+            player.scheduler()
+                    .buildTask(() -> {
+                        player.setInvulnerable(false);
+                        player.setGameMode(GameMode.ADVENTURE);
+                    })
+                    .delay(TaskSchedule.tick(5))
+                    .schedule();
+
+            player.teleport(before);
+            player.setVelocity(Vec.ZERO);
             player.heal();
             return;
         }
 
         player.setAutoViewable(false);
+        player.setInvulnerable(true);
         player.setGameMode(GameMode.SPECTATOR);
         player.showTitle(YOU_DIED_TITLE);
         player.heal();
@@ -238,6 +265,7 @@ public final class DamageHandler {
     private void reset(@NotNull Player player) {
         player.playSound(Sound.sound(SoundEvent.BLOCK_BEACON_ACTIVATE, Sound.Source.MASTER, 1f, 2f), Sound.Emitter.self());
         player.setAutoViewable(true);
+        player.setInvulnerable(false);
         player.setGameMode(GameMode.ADVENTURE);
         player.clearTitle();
 
@@ -245,7 +273,9 @@ public final class DamageHandler {
     }
 
     private void giveRandomGun(@NotNull Player player) {
-        player.setItemInMainHand(this.game.getGunManager().getRandomGun().createItem());
+        Gun gun = this.game.getGunManager().getRandomGun();
+        player.setItemInMainHand(gun.createItem());
+        gun.renderAmmo(player, 1F, false);
     }
 
     private @NotNull Pos getRandomSpawnPoint() {

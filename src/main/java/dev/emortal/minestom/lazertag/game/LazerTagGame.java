@@ -52,6 +52,7 @@ public final class LazerTagGame extends Game {
         player.setAutoViewable(true);
         player.setTeam(null);
         player.setGlowing(false);
+        player.setInvulnerable(false);
         player.setGameMode(GameMode.ADVENTURE);
 
         player.setRespawnPoint(WAITING_SPAWN_POINT);

@@ -7,28 +7,27 @@ import dev.emortal.minestom.lazertag.gun.ItemRarity;
 import net.kyori.adventure.sound.Sound;
 import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
-import org.jetbrains.annotations.NotNull;
 
-public final class LazerMinigun extends Gun {
+public final class Rifle extends Gun {
     private static final GunItemInfo INFO = new GunItemInfo(
-            Material.NETHERITE_SHOVEL,
+            Material.STONE_HOE,
             ItemRarity.RARE,
 
-            0.75f,
-            50.0,
-            3,
-            70,
+            7f,
+            80,
+            0,
+            15,
 
-            3500,
-            100,
-            50,
+            2500,
+            300,
+            0,
             0,
             1,
 
-            Sound.sound(SoundEvent.BLOCK_BEACON_DEACTIVATE, Sound.Source.PLAYER, 2f, 2f)
+            Sound.sound(SoundEvent.ENTITY_PLAYER_BIG_FALL, Sound.Source.PLAYER, 1f, 0.75f)
     );
 
-    public LazerMinigun(@NotNull LazerTagGame game) {
-        super(game, "Lazer Minigun", INFO);
+    public Rifle(LazerTagGame game) {
+        super(game, "Rifle", INFO);
     }
 }

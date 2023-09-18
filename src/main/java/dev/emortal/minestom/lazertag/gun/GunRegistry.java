@@ -3,7 +3,11 @@ package dev.emortal.minestom.lazertag.gun;
 import dev.emortal.minestom.lazertag.game.LazerTagGame;
 import dev.emortal.minestom.lazertag.gun.guns.AssaultRifle;
 import dev.emortal.minestom.lazertag.gun.guns.BeeBlaster;
-import dev.emortal.minestom.lazertag.gun.guns.LazerMinigun;
+import dev.emortal.minestom.lazertag.gun.guns.BeeMinigun;
+import dev.emortal.minestom.lazertag.gun.guns.BlockChucker;
+import dev.emortal.minestom.lazertag.gun.guns.Minigun;
+import dev.emortal.minestom.lazertag.gun.guns.RBG;
+import dev.emortal.minestom.lazertag.gun.guns.Rifle;
 import dev.emortal.minestom.lazertag.gun.guns.Shotgun;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,18 +52,22 @@ public final class GunRegistry {
         return this.guns.get(index);
     }
 
-    public void register(@NotNull Gun powerUp) {
-        String name = powerUp.getName();
+    public void register(@NotNull Gun gun) {
+        String name = gun.getName();
         if (this.registry.containsKey(name)) {
-            throw new IllegalArgumentException("Power up with name " + name + " already exists!");
+            throw new IllegalArgumentException("Gun with name " + name + " already exists!");
         }
-        this.registry.put(name, powerUp);
+        this.registry.put(name, gun);
     }
 
     public void registerGuns() {
         this.register(new AssaultRifle(this.game));
         this.register(new BeeBlaster(this.game));
-        this.register(new LazerMinigun(this.game));
+        this.register(new BeeMinigun(this.game));
+        this.register(new Rifle(this.game));
+        this.register(new RBG(this.game));
+        this.register(new Minigun(this.game));
         this.register(new Shotgun(this.game));
+        this.register(new BlockChucker(this.game));
     }
 }

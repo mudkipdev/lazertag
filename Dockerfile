@@ -11,4 +11,3 @@ COPY build/libs/*-all.jar /app/lazertag.jar
 COPY run/maps /app/maps
 
 CMD ["java", "--enable-preview", "-jar", "/app/lazertag.jar"]
-

@@ -35,7 +35,7 @@ public abstract class Gun {
     public static final @NotNull Tag<Long> COOLDOWN_TAG = Tag.Long("cooldown");
 
     protected final @NotNull LazerTagGame game;
-    protected final @NotNull String name;
+    private final @NotNull String name;
     private final @NotNull GunItemInfo itemInfo;
 
     protected Gun(@NotNull LazerTagGame game, @NotNull String name, @NotNull GunItemInfo itemInfo) {
@@ -44,13 +44,7 @@ public abstract class Gun {
         this.itemInfo = itemInfo;
     }
 
-    public void shoot(@NotNull Player shooter) {
-        int ammo = shooter.getItemInMainHand().meta().getTag(AMMO_TAG) - 1;
-        if (ammo < 0) return;
-
-        float ammoPercentage = ammo / (float) this.itemInfo.ammo();
-        this.renderAmmo(shooter, ammoPercentage, false);
-
+    public void shoot(@NotNull Player shooter, int ammo) {
         for (int i = 0; i < this.itemInfo.bullets(); i++) {
             Vec shootDir = spread(shooter.getPosition().direction(), this.itemInfo.spread());
             Pos eyePos = shooter.getPosition().add(0, shooter.getEyeHeight(), 0);
@@ -67,6 +61,11 @@ public abstract class Gun {
 
             ParticleUtil.renderBulletTrail(this.game.getSpawningInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
         }
+    }
+
+    public void afterShoot(Player shooter, int ammo) {
+        float ammoPercentage = ammo / (float) this.itemInfo.ammo();
+        this.renderAmmo(shooter, ammoPercentage, false);
 
         // Decrease ammo
         shooter.setItemInMainHand(shooter.getItemInMainHand().withMeta(meta -> {

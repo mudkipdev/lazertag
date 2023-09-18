@@ -9,26 +9,26 @@ import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
 import org.jetbrains.annotations.NotNull;
 
-public final class AssaultRifle extends Gun {
+public final class Minigun extends Gun {
     private static final GunItemInfo INFO = new GunItemInfo(
-            Material.DIAMOND_HOE,
+            Material.NETHERITE_SHOVEL,
             ItemRarity.RARE,
 
-            3.5f,
-            45.0,
-            2,
-            40,
+            0.75f,
+            50.0,
+            3,
+            70,
 
-            3000,
-            320,
-            170,
+            3500,
+            100,
+            50,
             0,
             1,
 
-            Sound.sound(SoundEvent.ENTITY_BLAZE_HURT, Sound.Source.PLAYER, 1.3f, 1.1f)
+            Sound.sound(SoundEvent.BLOCK_BEACON_DEACTIVATE, Sound.Source.PLAYER, 2f, 2f)
     );
 
-    public AssaultRifle(@NotNull LazerTagGame game) {
-        super(game, "Assault Rifle", INFO);
+    public Minigun(@NotNull LazerTagGame game) {
+        super(game, "Lazer Minigun", INFO);
     }
 }
