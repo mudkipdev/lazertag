@@ -20,6 +20,6 @@ jobs:
     steps:
       - uses: "emortalmc/actions/argo-sync@main"
         with:
-          deployment-name: "lobby"
-          values-path: "server/values/lobby.yaml"
+          deployment-name: "lazertag"
+          values-path: "server/values/lazertag.yaml"
           deployments-repo-token: "${{ secrets.DEPLOYMENTS_REPO_TOKEN }}"
