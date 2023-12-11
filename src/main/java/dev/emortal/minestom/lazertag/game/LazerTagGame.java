@@ -3,10 +3,12 @@ package dev.emortal.minestom.lazertag.game;
 import dev.emortal.minestom.gamesdk.MinestomGameServer;
 import dev.emortal.minestom.gamesdk.config.GameCreationInfo;
 import dev.emortal.minestom.gamesdk.game.Game;
+import dev.emortal.minestom.gamesdk.util.GameWinLoseMessages;
 import dev.emortal.minestom.lazertag.gun.GunManager;
 import dev.emortal.minestom.lazertag.map.LoadedMap;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
@@ -105,12 +107,12 @@ public final class LazerTagGame extends Game {
 
         Title victoryTitle = Title.title(
                 MINI_MESSAGE.deserialize("<gradient:#ffc570:gold><bold>VICTORY!"),
-                Component.empty(),
+                Component.text(GameWinLoseMessages.randomVictory(), NamedTextColor.GRAY),
                 Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(3))
         );
         Title defeatTitle = Title.title(
                 MINI_MESSAGE.deserialize("<gradient:#ff474e:#ff0d0d><bold>DEFEAT!"),
-                Component.empty(),
+                Component.text(GameWinLoseMessages.randomDefeat(), NamedTextColor.GRAY),
                 Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(3))
         );
 
