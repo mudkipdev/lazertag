@@ -98,7 +98,11 @@ public final class LazerTagGame extends Game {
     }
 
     @Override
-    public @NotNull Instance getSpawningInstance() {
+    public @NotNull Instance getSpawningInstance(@NotNull Player player) {
+        return this.map.instance();
+    }
+
+    public @NotNull Instance getInstance() {
         return this.map.instance();
     }
 

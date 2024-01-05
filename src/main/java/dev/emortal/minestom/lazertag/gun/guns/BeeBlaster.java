@@ -51,7 +51,7 @@ public final class BeeBlaster extends Gun {
         Pos spawnPos = shooter.getPosition().add(0, shooter.getEyeHeight() - EntityType.BEE.height() / 2, 0)
                 .add(shooter.getPosition().direction().mul(1));
 
-        entity.setInstance(this.game.getSpawningInstance(), spawnPos);
+        entity.setInstance(this.game.getInstance(), spawnPos);
     }
 
     private final class BeeBlasterEntity extends BetterEntityProjectile {

@@ -49,7 +49,7 @@ public abstract class Gun {
             Vec shootDir = spread(shooter.getPosition().direction(), this.itemInfo.spread());
             Pos eyePos = shooter.getPosition().add(0, shooter.getEyeHeight(), 0);
 
-            RaycastResult raycast = RaycastUtil.raycast(this.game.getSpawningInstance(), eyePos, shootDir, this.itemInfo.distance(),
+            RaycastResult raycast = RaycastUtil.raycast(this.game.getInstance(), eyePos, shootDir, this.itemInfo.distance(),
                     entity -> entity != shooter && entity instanceof Player player && player.getGameMode() == GameMode.ADVENTURE);
             Point hitPoint = raycast.hitPosition() == null ? eyePos.add(shootDir.mul(this.itemInfo.distance())) : raycast.hitPosition();
 
@@ -59,7 +59,7 @@ public abstract class Gun {
                 // TODO: hit block animation
             }
 
-            ParticleUtil.renderBulletTrail(this.game.getSpawningInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
+            ParticleUtil.renderBulletTrail(this.game.getInstance(), eyePos.add(shootDir.mul(2.0)), hitPoint, 1.5);
         }
     }
 

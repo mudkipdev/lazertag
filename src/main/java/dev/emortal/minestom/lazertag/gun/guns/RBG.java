@@ -49,7 +49,7 @@ public final class RBG extends Gun {
         Pos spawnPos = shooter.getPosition().add(0, shooter.getEyeHeight() - EntityType.BEE.height() / 2, 0)
                 .add(shooter.getPosition().direction().mul(1));
 
-        entity.setInstance(this.game.getSpawningInstance(), spawnPos);
+        entity.setInstance(this.game.getInstance(), spawnPos);
     }
 
     private final class BeeBlasterEntity extends BetterEntityProjectile {
@@ -80,7 +80,7 @@ public final class RBG extends Gun {
 
             this.sendPacketToViewers(explosionPacket);
 
-            for (Player victim : RBG.this.game.getSpawningInstance().getPlayers()) {
+            for (Player victim : RBG.this.game.getInstance().getPlayers()) {
                 if (victim == this.shooter) continue;
                 if (victim.isInvulnerable()) continue;
                 if (victim.getDistanceSquared(this) > 5 * 5) continue;

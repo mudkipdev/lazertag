@@ -59,7 +59,7 @@ public final class BlockChucker extends Gun {
         Pos spawnPos = shooter.getPosition().add(0, shooter.getEyeHeight() - EntityType.BEE.height() / 2, 0)
                 .add(shooter.getPosition().direction().mul(1));
 
-        entity.setInstance(this.game.getSpawningInstance(), spawnPos);
+        entity.setInstance(this.game.getInstance(), spawnPos);
     }
 
     private final class BlockChuckerEntity extends BetterEntityProjectile {
@@ -119,7 +119,7 @@ public final class BlockChucker extends Gun {
             ServerPacket explosionPacket = new ExplosionPacket(pos.x(), pos.y(), pos.z(), 2f, new byte[0], 0f, 0f, 0);
             this.sendPacketToViewers(explosionPacket);
 
-            for (Player victim : BlockChucker.this.game.getSpawningInstance().getPlayers()) {
+            for (Player victim : BlockChucker.this.game.getInstance().getPlayers()) {
                 if (victim.isInvulnerable()) continue;
                 if (victim.getDistanceSquared(this) > 5 * 5) continue;
 
