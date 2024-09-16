@@ -10,7 +10,6 @@ import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.PlayerTickEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.event.trait.PlayerInstanceEvent;
-import net.minestom.server.item.ItemMeta;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.timer.TaskSchedule;
 import org.jetbrains.annotations.NotNull;
@@ -56,9 +55,8 @@ public final class GunManager {
         Gun heldGun = getHeldPowerUp(player);
         if (heldGun == null) return;
 
-        ItemMeta itemMeta = player.getItemInMainHand().meta();
-        if (itemMeta.hasTag(Gun.RELOADING_TAG)) return;
-        if (itemMeta.getTag(Gun.AMMO_TAG) == heldGun.getItemInfo().ammo()) return;
+        if (player.getItemInMainHand().hasTag(Gun.RELOADING_TAG)) return;
+        if (player.getItemInMainHand().getTag(Gun.AMMO_TAG) == heldGun.getItemInfo().ammo()) return;
 
         heldGun.reload(player);
     }
@@ -70,8 +68,8 @@ public final class GunManager {
         Gun heldGun = this.getHeldPowerUp(player);
         if (heldGun == null) return;
 
-        int ammo = player.getItemInMainHand().meta().getTag(Gun.AMMO_TAG);
-        boolean reloading = player.getItemInMainHand().meta().hasTag(Gun.RELOADING_TAG);
+        int ammo = player.getItemInMainHand().getTag(Gun.AMMO_TAG);
+        boolean reloading = player.getItemInMainHand().hasTag(Gun.RELOADING_TAG);
         if (reloading) return;
 
         float ammoPercentage = ammo / (float) heldGun.getItemInfo().ammo();
@@ -85,9 +83,8 @@ public final class GunManager {
 
         // TODO: Gun cooldown
 
-        ItemMeta itemMeta = player.getItemInMainHand().meta();
-        if (itemMeta.hasTag(Gun.RELOADING_TAG)) return;
-        if (itemMeta.getTag(Gun.COOLDOWN_TAG) > System.currentTimeMillis()) return;
+        if (player.getItemInMainHand().hasTag(Gun.RELOADING_TAG)) return;
+        if (player.getItemInMainHand().getTag(Gun.COOLDOWN_TAG) > System.currentTimeMillis()) return;
 
         Gun heldGun = this.getHeldPowerUp(player);
         if (heldGun == null) return;
@@ -100,7 +97,7 @@ public final class GunManager {
 
             @Override
             public TaskSchedule get() {
-                int ammo = player.getItemInMainHand().meta().getTag(Gun.AMMO_TAG) - 1;
+                int ammo = player.getItemInMainHand().getTag(Gun.AMMO_TAG) - 1;
                 if (ammo < 0) return TaskSchedule.stop();
 
                 heldGun.shoot(player, ammo);

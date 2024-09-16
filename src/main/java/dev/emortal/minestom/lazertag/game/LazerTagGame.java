@@ -1,6 +1,5 @@
 package dev.emortal.minestom.lazertag.game;
 
-import dev.emortal.minestom.gamesdk.MinestomGameServer;
 import dev.emortal.minestom.gamesdk.config.GameCreationInfo;
 import dev.emortal.minestom.gamesdk.game.Game;
 import dev.emortal.minestom.gamesdk.util.GameWinLoseMessages;
@@ -13,11 +12,8 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
-import net.minestom.server.entity.fakeplayer.FakePlayer;
-import net.minestom.server.entity.fakeplayer.FakePlayerOption;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
@@ -80,21 +76,8 @@ public final class LazerTagGame extends Game {
             this.scoreboardHandler.show(player);
         }
 
-        if (MinestomGameServer.TEST_MODE) {
-            this.spawnDummyBot();
-        }
-
         this.gunManager.registerListeners();
         this.damageHandler.registerListeners();
-    }
-
-    private void spawnDummyBot() {
-        FakePlayer.initPlayer(UUID.randomUUID(), "lazertagbot", new FakePlayerOption().setInTabList(true), player -> {
-            player.setHeldItemSlot((byte) 4);
-            player.setVelocity(new Vec(2, 20, 0));
-            this.damageHandler.respawn(player);
-            player.setCustomSynchronizationCooldown(Duration.ofSeconds(3));
-        });
     }
 
     @Override

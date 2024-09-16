@@ -6,7 +6,7 @@ import net.hollowcube.polar.PolarLoader;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
-import net.minestom.server.utils.NamespaceID;
+import net.minestom.server.registry.DynamicRegistry;
 import net.minestom.server.world.DimensionType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,11 +26,6 @@ public final class MapManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapManager.class);
     private static final Gson GSON = new Gson();
 
-    private static final DimensionType DIMENSION_TYPE = DimensionType.builder(NamespaceID.from("emortalmc:lazertag"))
-            .skylightEnabled(true)
-//            .ambientLight(1.0f)
-            .build();
-
     private static final List<String> ENABLED_MAPS = List.of(
             "dizzymc"
     );
@@ -41,7 +36,11 @@ public final class MapManager {
     private final @NotNull Map<String, PreLoadedMap> preLoadedMaps;
 
     public MapManager() {
-        MinecraftServer.getDimensionTypeManager().addDimension(DIMENSION_TYPE);
+        DynamicRegistry.Key<DimensionType> dimension = MinecraftServer.getDimensionTypeRegistry().register(
+                "emortalmc:lazertag",
+                DimensionType.builder()
+                        .hasSkylight(true)
+                        .build());
 
         Map<String, PreLoadedMap> maps = new HashMap<>();
         for (String mapName : ENABLED_MAPS) {
@@ -54,10 +53,9 @@ public final class MapManager {
                 LOGGER.debug("Loading data for map {}: [{}]", mapName, data);
 
                 PolarLoader polarLoader = new PolarLoader(polarPath);
-                InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer(DIMENSION_TYPE, polarLoader);
+                InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer(dimension, polarLoader);
 
                 instance.setTimeRate(0);
-                instance.setTimeUpdate(null);
 
                 // Do some preloading!
                 for (int x = -CHUNK_LOADING_RADIUS; x < CHUNK_LOADING_RADIUS; x++) {
@@ -91,19 +89,14 @@ public final class MapManager {
 
     public @NotNull LoadedMap getRandomMap() {
         String randomMapId = ENABLED_MAPS.get(ThreadLocalRandom.current().nextInt(ENABLED_MAPS.size()));
-
         PreLoadedMap map = this.preLoadedMaps.get(randomMapId);
         return map.load();
     }
 
     private record PreLoadedMap(@NotNull InstanceContainer rootInstance, @NotNull MapData data) {
-
         @NotNull LoadedMap load() {
             Instance shared = MinecraftServer.getInstanceManager().createSharedInstance(this.rootInstance());
-
             shared.setTimeRate(0);
-            shared.setTimeUpdate(null);
-
             return new LoadedMap(shared, this.data());
         }
     }

@@ -1,10 +1,16 @@
 plugins {
-    id("java")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    java
+    application
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 group = "dev.emortal.minestom"
 version = "1.0-SNAPSHOT"
+application.mainClass = "dev.emortal.minestom.lazertag.Main"
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
 
 repositories {
     mavenCentral()
@@ -17,30 +23,15 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.emortal.minestom:game-sdk:884345c")
-
-    implementation("net.kyori:adventure-text-minimessage:4.14.0")
-    implementation("dev.hollowcube:polar:1.3.1")
-
-    implementation("dev.emortal:rayfast:a4a8041")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
+    implementation("dev.emortal.minestom:game-sdk:95a6b5c")
+    implementation("net.kyori:adventure-text-minimessage:4.17.0")
+    implementation("dev.hollowcube:polar:1.11.2")
+    implementation("dev.emortal:rayfast:7975ac5")
 }
 
 tasks {
     shadowJar {
         mergeServiceFiles()
-
-        manifest {
-            attributes (
-                "Main-Class" to "dev.emortal.minestom.lazertag.Main",
-                "Multi-Release" to true
-            )
-        }
     }
 
     withType<AbstractArchiveTask> {

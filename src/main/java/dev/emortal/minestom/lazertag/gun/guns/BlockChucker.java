@@ -6,6 +6,7 @@ import dev.emortal.minestom.lazertag.gun.GunItemInfo;
 import dev.emortal.minestom.lazertag.gun.ItemRarity;
 import dev.emortal.minestom.lazertag.util.entity.BetterEntityProjectile;
 import net.kyori.adventure.sound.Sound;
+import net.minestom.server.collision.Aerodynamics;
 import net.minestom.server.collision.Shape;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
@@ -90,11 +91,8 @@ public final class BlockChucker extends Gun {
 
         public BlockChuckerEntity(@NotNull Player shooter) {
             super(shooter, EntityType.FALLING_BLOCK);
-
             ((FallingBlockMeta) super.entityMeta).setBlock(getRandomBlock());
-
-            super.setDrag(false);
-            super.setGravityDrag(false);
+            super.setAerodynamics(new Aerodynamics(0.0, 1.0, 0.0));
             super.setVelocity(shooter.getPosition().direction().mul(35));
             super.scheduleRemove(Duration.ofSeconds(5));
         }

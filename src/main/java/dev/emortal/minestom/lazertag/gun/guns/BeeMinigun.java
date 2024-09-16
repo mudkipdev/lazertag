@@ -6,6 +6,7 @@ import dev.emortal.minestom.lazertag.gun.GunItemInfo;
 import dev.emortal.minestom.lazertag.gun.ItemRarity;
 import dev.emortal.minestom.lazertag.util.entity.BetterEntityProjectile;
 import net.kyori.adventure.sound.Sound;
+import net.minestom.server.collision.Aerodynamics;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -56,9 +57,7 @@ public final class BeeMinigun extends Gun {
 
         BeeBlasterEntity(@NotNull Player shooter) {
             super(shooter, EntityType.BEE);
-
-            super.setDrag(false);
-            super.setGravityDrag(false);
+            super.setAerodynamics(new Aerodynamics(0.0, 1.0, 0.0));
             super.setNoGravity(true);
             super.scheduleRemove(Duration.ofSeconds(3));
 

@@ -1,3 +1,2 @@
 # LazerTag
-
 Minecraft gun gamemode

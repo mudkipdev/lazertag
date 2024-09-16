@@ -22,27 +22,29 @@ import java.util.function.Predicate;
 public final class RaycastUtil {
     private static final double TOLERANCE = 0.0;
 
-    private static final Map<BoundingBox, Area3d> boundingBoxToArea3dMap = new HashMap<>();
+    private static final Map<BoundingBox, Area3d> BOUNDING_BOX_TO_AREA_3D_MAP = new HashMap<>();
 
     public static void init() {
         Area3d.CONVERTER.register(BoundingBox.class, box -> {
-            boundingBoxToArea3dMap.computeIfAbsent(box, bb -> Area3dRectangularPrism.of(
+            BOUNDING_BOX_TO_AREA_3D_MAP.computeIfAbsent(box, bb -> Area3dRectangularPrism.of(
                     bb.minX() - TOLERANCE, bb.minY() - TOLERANCE, bb.minZ() - TOLERANCE,
                     bb.maxX() + TOLERANCE, bb.maxY() + TOLERANCE, bb.maxZ() + TOLERANCE
             ));
 
-            return boundingBoxToArea3dMap.get(box);
+            return BOUNDING_BOX_TO_AREA_3D_MAP.get(box);
         });
     }
 
     public static boolean hasLineOfSight(@NotNull Entity a, @NotNull Entity b) {
-        return hasLineOfSight(a.getInstance(), a.getPosition().add(0, a.getEyeHeight(), 0), b.getPosition().add(0, b.getEyeHeight(), 0));
+        return hasLineOfSight(
+                a.getInstance(),
+                a.getPosition().add(0, a.getEyeHeight(), 0),
+                b.getPosition().add(0, b.getEyeHeight(), 0));
     }
 
     public static boolean hasLineOfSight(@NotNull Instance instance, @NotNull Point startPoint, @NotNull Point endPoint) {
         Vec direction = Vec.fromPoint(endPoint.sub(startPoint)).normalize();
         double maxDistance = startPoint.distance(endPoint);
-
         return raycastBlock(instance, startPoint, direction, maxDistance) == null;
     }
 

@@ -17,12 +17,14 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
+import net.minestom.server.item.ItemComponent;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.tag.Tag;
 import net.minestom.server.timer.TaskSchedule;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
@@ -68,10 +70,9 @@ public abstract class Gun {
         this.renderAmmo(shooter, ammoPercentage, false);
 
         // Decrease ammo
-        shooter.setItemInMainHand(shooter.getItemInMainHand().withMeta(meta -> {
-            meta.setTag(AMMO_TAG, ammo);
-            meta.setTag(COOLDOWN_TAG, System.currentTimeMillis() + this.itemInfo.shootDelay());
-        }));
+        shooter.setItemInMainHand(shooter.getItemInMainHand()
+                .withTag(AMMO_TAG, ammo)
+                .withTag(COOLDOWN_TAG, System.currentTimeMillis() + this.itemInfo.shootDelay()));
 
         // If ran out of ammo - reload!
         if (ammo == 0) {
@@ -80,12 +81,11 @@ public abstract class Gun {
     }
 
     public void reload(@NotNull Player player) {
-        ItemStack item = player.getItemInMainHand();
-        player.setItemInMainHand(item.withMeta(meta -> {
-            meta.setTag(RELOADING_TAG, true);
-            meta.setTag(AMMO_TAG, 0);
-        }));
+        ItemStack item = player.getItemInMainHand()
+                .withTag(RELOADING_TAG, true)
+                .withTag(AMMO_TAG, 0);
 
+        player.setItemInMainHand(item);
         player.playSound(Sound.sound(SoundEvent.BLOCK_ANVIL_LAND, Sound.Source.PLAYER, 0.7f, 2f));
         player.scheduler().submitTask(new Supplier<>() {
             final long startingReloadTicks = Gun.this.itemInfo.reloadTime() / MinecraftServer.TICK_MS;
@@ -102,12 +102,11 @@ public abstract class Gun {
                     // Fully reloaded!
                     Gun.this.playReloadSound(player);
 
-                    player.setItemInMainHand(item.withMeta(meta -> {
-                        meta.removeTag(RELOADING_TAG);
-                        meta.setTag(AMMO_TAG, Gun.this.itemInfo.ammo());
-                    }));
-                    Gun.this.renderAmmo(player, 1f, false);
+                    player.setItemInMainHand(item
+                            .withTag(RELOADING_TAG, null)
+                            .withTag(AMMO_TAG, Gun.this.itemInfo.ammo()));
 
+                    Gun.this.renderAmmo(player, 1f, false);
                     return TaskSchedule.stop();
                 }
 
@@ -172,13 +171,11 @@ public abstract class Gun {
 
     public @NotNull ItemStack createItem() {
         return ItemStack.builder(this.itemInfo.material())
-                .meta(meta -> {
-                    meta.displayName(Component.text(this.name).decoration(TextDecoration.ITALIC, false));
-                    meta.lore(this.itemInfo.rarity().getName().decoration(TextDecoration.ITALIC, false));
-                    meta.setTag(AMMO_TAG, this.itemInfo.ammo());
-                    meta.setTag(NAME_TAG, this.name);
-                    meta.setTag(COOLDOWN_TAG, 0L);
-                })
+                .set(ItemComponent.ITEM_NAME, Component.text(this.name))
+                .set(ItemComponent.LORE, List.of(this.itemInfo.rarity().getName().decoration(TextDecoration.ITALIC, false)))
+                .set(AMMO_TAG, this.itemInfo.ammo())
+                .set(NAME_TAG, this.name)
+                .set(COOLDOWN_TAG, 0L)
                 .build();
     }
 

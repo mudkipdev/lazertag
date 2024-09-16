@@ -10,14 +10,15 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
+import net.minestom.server.collision.Aerodynamics;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.damage.Damage;
 import net.minestom.server.entity.damage.DamageType;
 import net.minestom.server.entity.damage.EntityDamage;
-import net.minestom.server.entity.fakeplayer.FakePlayer;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerMoveEvent;
@@ -97,21 +98,18 @@ public final class DamageHandler {
             return;
         }
 
-        target.damage(DamageType.fromPlayer(damager), damage);
+        target.damage(Damage.fromPlayer(damager, damage));
     }
 
     private void spawnDamageIndicator(Pos playerPos, float damage) {
         BetterEntity entity = new BetterEntity(EntityType.TEXT_DISPLAY);
-        entity.setDrag(false);
-        entity.setGravityDrag(false);
-
+        entity.setAerodynamics(new Aerodynamics(0.0, 1.0, 0.0));
         float healthPercentage = Math.min(1F, Math.max(0F, damage / 20F));
         TextColor color = TextColor.lerp(healthPercentage, NamedTextColor.DARK_RED, NamedTextColor.GOLD);
         TextColor lighterColor = TextColor.color(
-                MathUtils.clamp(color.red() + 100, 0, 255),
-                MathUtils.clamp(color.green() + 100, 0, 255),
-                MathUtils.clamp(color.blue() + 100, 0, 255)
-        );
+                Math.clamp(color.red() + 100, 0, 255),
+                Math.clamp(color.green() + 100, 0, 255),
+                Math.clamp(color.blue() + 100, 0, 255));
 
         TextDisplayMeta meta = (TextDisplayMeta) entity.getEntityMeta();
 
@@ -202,25 +200,6 @@ public final class DamageHandler {
             }
         } else {
             this.game.sendMessage(this.getDeathMessage(player));
-        }
-
-        if (player instanceof FakePlayer) { // For testing!
-            Pos before = player.getPosition();
-            player.setInvulnerable(true);
-            player.setGameMode(GameMode.SPECTATOR);
-
-            player.scheduler()
-                    .buildTask(() -> {
-                        player.setInvulnerable(false);
-                        player.setGameMode(GameMode.ADVENTURE);
-                    })
-                    .delay(TaskSchedule.tick(5))
-                    .schedule();
-
-            player.teleport(before);
-            player.setVelocity(Vec.ZERO);
-            player.heal();
-            return;
         }
 
         player.setAutoViewable(false);
